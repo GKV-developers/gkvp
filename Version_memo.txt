@@ -1,0 +1,126 @@
+gkvp_f0.59                                              S. Maeyama     Oct 2020
+1) NEC SX-Aurora Makefile/shoot/sub.q are added. Tuned source codes are used.
+
+2) Extension of diag (write NetCDF by out_netcdf.f90)
+
+
+
+gkvp_f0.58                                              S. Maeyama     Oct 2020
+1) Some benchmark data are added.
+
+2) init_randoma, to switch random number for initialization, is added to gkvp_namelist.
+
+
+
+gkvp_f0.57                                              S. Maeyama     Oct 2020
+1) Version number f0.** is removed from filename. 
+   *** Update history should be clarified in each module files too. ***
+
+2) A bug at bias factor of collision, nu, is modified in colliimp module.
+
+3) equib_type = "slab" is added.
+
+4) Minor debugs:
+  - Padding region iend_y < my is carefully initalized.
+  - menergy(:,:)=0 for beta=0
+  - freq module is modified to support nx0=0.
+
+
+
+gkvp_f0.55                                              S. Maeyama     Dec 2019
+1) freq module is updated for kx /= 0 mode.
+
+2) set module is modified. When s_hat = 0.0, m_j = 0 and kxmin = kymin are enforced.
+
+3) For linear runs, tips_rescale_for_linear_runs are added to avoid divergence
+
+
+
+gkvp_f0.54                                              M. Nakata      Dec 2019
+1) Mean ExB shearing effect in Eulerian approach is added: "shearflow" module.  
+
+2) igs module is fixed for reading the tokamak geometry. 
+
+
+
+gkvp_f0.53                                              M. Nakata      Jan 2019
+1) vmecbzx (and set) module is fixed for reading the stellarator geometry data for N_tht>1 cases. 
+
+
+
+gkvp_f0.52                                              S. Maeyama     Sep 2018
+1) Optimizations for reduced memory usage and efficient commun.-comput. overlap.
+
+
+
+
+
+gkvp_f0.50                                              S. Maeyama     Sep 2017
+1) gkvp_f0.50_colliimp.f90 is added for implicit collision solver.
+
+2) lib/gkvp_f0.50_math_portable.f90 is added.
+
+
+
+
+
+gkvp_f0.48                                              S. Maeyama     Dec 2016
+1) gkvp_f0.48_vmecbzx.f90 is added in stead of gkvp_f0.48_vmecin.f90.
+
+2) Namelist is changed from (r_minor, q_d, n_alp) to (kymin, m_j, del_c).
+
+3) Re-organize output files.
+
+
+
+
+
+gkvp_f0.47                                              S. Maeyama     Nov 2016
+
+1) Triad transfer analysis subroutine trans_triad is added in trans module.
+
+2) math_random in lib/gkvp_f0.47_math_SSL2.f90 has been extended for double precision.
+
+
+
+
+
+gkvp_f0.46                                              S. Maeyama     May 2016
+
+1) 0-padding in bndry module is modified, for the case nzb>=3, z_bound=outflow.
+
+2) Remove OpenMP NOWAIT directive in intgrl module, which is the cause of
+   a error in the reduction against iv, im.
+
+3) Remove OpenMP NOWAIT directive in colli module, which is the cause of 
+   a error in the reduction against is2. (This modification introduces the
+   implicit barrier synchronization among OpenMP threads, and thus prevent 
+   computation-communication overlap by using OpenMP MASTER thread.
+   Improvement is required.)
+
+4) Step-job script "shoot" is added.
+
+5) Transform between ff and hh is contained in fld_ff2hh and fld_hh2ff.
+
+6) z_calc and art_diff is added in namelist.
+
+
+
+
+
+gkvp_f0.45                                               M. Nakata    July 2015
+
+Modification from previous f0.40 ver. (Nakata July2015) 
+
+1) OMP directives are corrected in colli-module: nowait-directive was missing.
+
+2) Overlap procedures in are corrected in caldlt_full routine in advnc-module: 
+The GK field-particle and non-isothermal collision terms are calculated together in GK_colli_CF_DT. 
+
+3) dtc-module is upgraded so as to include the velocity-dependent collision frequency: 
+HOWEVER, it is not always good time-step estimation due to the steepness of e-i collision frequency.  
+
+4) Neglect "ic2zero" flag in namelist: this was just for debug. 
+
+5) calc_dh in advnc-module is modified: same as f0.30
+ 

@@ -1,0 +1,45 @@
+#!/bin/csh
+
+###  NOTE  ###
+###    Process number x Thread number =< 16 Cores x Node numbers
+###    Available resource groups:
+###      debug           #   1- 240 nodes, 30 min., 28GB/nodes
+###      short           #   1-  72 nodes,  6 hour, 28GB/nodes
+###      regular         #  12- 480 nodes, 48 hour, 28GB/nodes
+###      x-large         # 481-1440 nodes, 24 hour, 28GB/nodes
+###      challenge       #   1-4800 nodes, 24 hour, 28GB/nodes
+###      interactive_n1  #        1 nodes,  2 hour, 28GB/nodes, interactive
+###      interactive_n8  #        8 nodes, 10 min., 28GB/nodes, interactive
+###
+###    To submit a interactive job, "pjsub --interact sub.q"
+###                    a batch job, "pjsub sub.q"
+###                      step jobs, "pjsub --step sub1.q sub2.q ..."
+##############
+
+#PJM -L "rscgrp=regular"
+#### -L "node=4x6x8"
+#PJM -L "node=192"
+#PJM -L "elapse=09:00:00"
+#PJM -j
+#PJM -g "ge26"
+#PJM --mpi "proc=384"
+#### --mpi "rank-map-hostfile=myrankmap"
+
+setenv PARALLEL 8          # Thread number for automatic parallelization
+setenv OMP_NUM_THREADS 8   # Thread number for Open MP
+
+
+set DIR=/group2/gc15/c15064/gkvp/f0.41/pusztai2011/fig5/conv_coll1e19_h/test01/
+set LDM=gkvp_mpifft.exe
+set NL=gkvp_f0.41_namelist.001
+
+### Run
+cd ${DIR}
+setenv fu05 ${DIR}/${NL}
+
+#rm -rf ${DIR}Fprofd*
+#mkdir ${DIR}Fprofd_Stati
+#fapp -C -d ${DIR}Fprofd_Stati -Impi,hwm -L1 -Hevent=Statistics mpiexec ${DIR}/${LDM}
+#fipp -C -d ${DIR}Fprofd_Stati -Ihwm -Srange mpiexec ${DIR}/${LDM}
+mpiexec ${DIR}/${LDM}
+

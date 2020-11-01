@@ -1,0 +1,87 @@
+#!/bin/sh
+
+###  NOTE  ###
+###   MPI Processes x OpenMP Threads = 20 Physical cores x 2 CPUs x Node numbers
+###                                   (40 Logical cores with hyperthread)
+###   JFRS-1 computation nodes
+###     CPU: Intel Xeon Gold 6148 (2.4GHz, 20core) x2 per node
+###     Peak performance: 3072 GFLOPS per node
+###     Memory: 192 GB (16GB DDR4-2666 ECC DIMM x12) per node
+###     Memory Bandwidth: 255.94 GB/s per node
+###
+###   JFRS-1 job class
+###     dev  #   1 - 2    nodes,  3 hour, 192GB/nodes  2run/ 4submit
+###     S-M  #   1 - 32   nodes, 24 hour, 192GB/nodes  8run/40submit
+###     L    #  33 - 256  nodes, 24 hour, 192GB/nodes  4run/20submit
+###     LL   # 257 - 1370 nodes, 24 hour, 192GB/nodes  1run/**submit
+###
+###              To submit a batch job, "sbatch sub.q"
+###                To check job status, "squeue"
+###                      To delete job, "scancel JOBID"
+###   To show detailed info of the job, "scontrol show job=JOBID"
+###      To show job class information, "sinfo"
+###         To show budget information, "gresource" or "uresource"
+##############
+
+#SBATCH -A HBGKR              # Project name
+#SBATCH -p S-M                # Job class (dev, S-M, L, LL)
+#SBATCH -J GKV                # Job name
+#SBATCH -o %j.out             # strour filename (%j is JobID.)
+#SBATCH -e %j.err             # strerr filename
+#SBATCH -t 00:06:00           # Execute time
+#SBATCH -n 32                 # Number of tasks (= MPI processes)
+#SBATCH -c 20                 # Logical cores per task (= OpenMP threads*2)
+#                               (c/2 physical cores are assigned to the job.)
+####### -N *                  # Number of nodes
+####### --ntasks-per-node=*   # Tasks per node   (=n/N)
+####### --ntasks-per-socket=* # Tasks per socket (=ntasks-per-node/2)
+
+
+### NOTE: N*80=n*c logical cores are assigned.                              ###
+### When disabling hyperthread, set OMP_NUM_THREADS = c/2.                  ###
+###                       Then, N*40=n*c/2=(MPI Processes)x(OpenMP threads) ###
+
+
+#ulimit -c 0
+ulimit -s unlimited
+#export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}           # enable hyperthread
+export OMP_NUM_THREADS=$(( ${SLURM_CPUS_PER_TASK} / 2 )) # disable hyperthread
+
+echo "                  Nodes: ${SLURM_NNODES}"
+echo "                  Tasks: ${SLURM_NTASKS}"
+echo " Logical cores per task: ${SLURM_CPUS_PER_TASK}"
+echo "          MPI Processes: ${SLURM_NTASKS}"
+echo " OpenMP threads per MPI: ${OMP_NUM_THREADS}"
+#echo "        NTASKS_PER_NODE: ${SLURM_NTASKS_PER_NODE}"
+#echo "      NTASKS_PER_SOCKET: ${SLURM_NTASKS_PER_SOCKET}"
+
+
+### Option for PrgEnv-cray ####
+export FILENV="/tmp/temp_filenv"
+srun assign -U on g:sf
+### Option for PrgEnv-intel ###
+#export MKL_NUM_THREADS=1 # Use thread-safe MKL
+#export KMP_STACKSIZE=4G
+###############################
+
+
+### Working directory 
+DIR=%%DIR%%
+LDM=gkvp_mpifft.exe
+NL=gkvp_namelist.%%%
+
+
+#### Run
+date
+cd ${DIR}
+export fu05=${DIR}/${NL}
+srun ${DIR}/${LDM}
+date
+
+#srun --hint=nomultithread ${DIR}/${LDM}
+#srun --extra-node-info=2:20:1 --cpu-bind=quiet,rank_ldom ${DIR}/${LDM}
+#srun --extra-node-info=2:20:1 ${DIR}/${LDM}
+#srun --extra-node-info=2:20:1 --ntasks-per-socket=2 ${DIR}/${LDM}
+#srun --cpu-bind=verbose,rank_ldom ${DIR}/${LDM}
+#export SLURM_CPU_BIND="verbose,rank_ldom"
+#srun ${DIR}/${LDM}

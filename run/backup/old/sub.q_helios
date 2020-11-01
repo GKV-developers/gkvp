@@ -1,0 +1,62 @@
+#!/bin/sh
+
+#SBATCH -A HBGK           # Project name
+#SBATCH -J GKV            # Job name
+#SBATCH -N 32             # Number of nodes
+#SBATCH -n 128            # Number of tasks
+#SBATCH -c 4
+#SBATCH -o %j.out         # strour filename (%j is JobID.)
+#SBATCH -e %j.err         # strerr filename
+#SBATCH -t 00:05:00       # Execute time
+
+#module load bullxmpi intel
+module load intelmpi intel
+
+ulimit -c 0
+ulimit -s unlimited
+
+export OMP_NUM_THREADS=4
+export MKL_NUM_THREADS=1
+#export KMP_AFFINITY=verbose
+export KMP_STACKSIZE=4G
+echo $SLURM_JOB_ID
+echo $SLURM_JOB_NUM_NODES
+echo $SLURM_JOB_NODELIST
+export I_MPI_EXTRA_FILESYSTEM=enable
+export I_MPI_EXTRA_FILESYSTEM_LIST=lustre
+
+NAGDIR=/csc/softs/nag/fsl6i22dc
+export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${NAGDIR}/lib"
+
+
+### Working directory 
+DIR=%%DIR%%
+LDM=gkvp_mpifft.exe
+NL=gkvp_namelist.%%%
+
+
+#### Run
+#date
+#cd ${DIR}
+#export fu05=${DIR}/${NL}
+#mpirun -n 256 -perhost 8 ${DIR}/${LDM}
+#  # -n       "Total number of MPI processes"
+#  # -perhost "Number of MPI processes per node"
+#sleep 10
+#touch complete
+#date
+
+### Run the binary load module on /tmp on each node
+date
+cd ${DIR}
+export fu05=${DIR}/${NL}
+BIN=${LDM}
+rm -f ${BIN}.local
+srun -N ${SLURM_NNODES} -n ${SLURM_NNODES} cp ${LDM} /tmp/${BIN}
+ln -s /tmp/${BIN} ${BIN}.local
+mpirun -n 128 -ppn 4 ./${BIN}.local
+  # -n       "Total number of MPI processes"
+  # -ppn     "Number of MPI processes per node"
+sleep 10
+touch complete
+date

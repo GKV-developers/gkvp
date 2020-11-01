@@ -1,0 +1,40 @@
+#!/usr/bin/gnuplot
+#  set term postscript eps enhanced color
+#  set size 0.6,0.6
+  set size square
+  set key out box
+
+  set title "Strong Scaling on FX10 \n nxw=512,nyw=512,global_nz=8,global_nv=8,global_nm=15 \n nprocz=2,nprocv=2,nprocm=2,8SMP"
+  set xlabel "Number of wave-number-space parallelization"
+  set ylabel "Elapsed time per step"
+  set logscale x
+  set logscale y
+
+  nstep = 10
+
+#  set output "scaling_elt.eps"
+  plot "scaling.dat" u 1:($3 /nstep) ti "timeloop" w lp, \
+                  "" u 1:($6 /nstep) ti "rkg" w lp, \
+                  "" u 1:($7 /nstep) ti "field" w lp, \
+                  "" u 1:($8 /nstep) ti "literm" w lp, \
+                  "" u 1:($9 /nstep) ti "nlterm" w lp, \
+                  "" u 1:($10/nstep) ti "zfilter" w lp, \
+                  "" u 1:($11/nstep) ti "other" w lp
+  pause -1
+
+#  set output "scaling_nlterm_elt.eps"
+  plot "scaling.dat" u 1:($8 /nstep) ti "literm" w lp, \
+                  "" u 1:(($15+$16+$17+$18)/nstep) ti "calc" w lp, \
+                  "" u 1:(($31+$34+$37)/nstep) ti "sendrecv" w lp, \
+                  "" u 1:(($30+$32+$33+$35+$36+$38)/nstep) ti "buffinout" w lp
+  pause -1
+
+#  set output "scaling_nlterm_elt.eps"
+  plot "scaling.dat" u 1:($9 /nstep) ti "nlterm" w lp, \
+                  "" u 1:(($42+$44+$45+$47)/nstep) ti "fft" w lp, \
+                  "" u 1:(($43+$46)/nstep) ti "alltoall" w lp, \
+                  "" u 1:($23/nstep) ti "input" w lp, \
+                  "" u 1:($25/nstep) ti "realspcal" w lp, \
+                  "" u 1:($27/nstep) ti "output" w lp
+  pause -1
+

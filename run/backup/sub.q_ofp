@@ -1,0 +1,68 @@
+#!/bin/csh
+
+###  NOTE  ###
+###    Process number x Thread number =< 68 Cores x Node numbers x Hyper threading
+###
+###    Oakforest-PACS computation nodes
+###     CPU: Intel Xeon Phi 7250 Knights Landing (1.4GHz, 68core) per node
+###     Peak performance: 3046 GFLOPS per node
+###     Memory(MCDRAM): 16 GB per node
+###     Memory(MCDRAM) Bandwidth: 490 GB/s per node
+###     Memory(DDR4-2400): 96 GB (16GB x6) per node
+###     Memory(DDR4-2400) Bandwidth: 115.2 GB/s per node
+###     Interconnect: Intel Omni-Path Host Fabric Interface, Full-bisection bandwidth Fat-tree
+###     Interconnect Bandwidth: 12.5GB/s
+###
+###    Available resource groups for Oakforest-PACS:
+###      regular-flat      #     1 - 1024 nodes, 48 hour, 96GB/nodes  Memorymode:Flat  Clustermode:Quadrant
+###                        #  1025 - 2048 nodes, 24 hour, 96GB/nodes  Memorymode:Flat  Clustermode:Quadrant
+###      regular-cache     #     1 - 1024 nodes, 48 hour, 82GB/nodes  Memorymode:Cache Clustermode:Quadrant
+###                        #  1025 - 2048 nodes, 24 hour, 82GB/nodes  Memorymode:Cache Clustermode:Quadrant
+###      interactive-flat  #            1 nodes,  2 hour, 96GB/nodes  Memorymode:Flat  Clustermode:Quadrant
+###                        #     2 -   16 nodes, 10 min., 96GB/nodes  Memorymode:Flat  Clustermode:Quadrant
+###      interactive-cache #            1 nodes,  2 hour, 82GB/nodes  Memorymode:Cache Clustermode:Quadrant
+###                        #     2 -   16 nodes, 10 min., 82GB/nodes  Memorymode:Cache Clustermode:Quadrant
+###      debug-flat        #     1 -  128 nodes, 30 min., 96GB/nodes  Memorymode:Flat  Clustermode:Quadrant
+###      debug-cache       #     1 -  128 nodes, 30 min., 82GB/nodes  Memorymode:Cache Clustermode:Quadrant
+###      prepost           #            1 nodes,  6 hour,222GB/nodes  Memorymode:Flat
+###
+###    To submit a interactive job, "pjsub --interact sub.q"
+###                    a batch job, "pjsub sub.q"
+###            To check job status, "pjstat" for step jobs "pjstat -E"
+###                  To delete job, "pjdel JOBID"
+###     To show budget information, "show_token"
+##############
+
+
+#PJM -L "rscgrp=debug-flat"
+#PJM -L "node=12"
+#PJM -L "elapse=00:10:00"
+#PJM -j
+#PJM -s
+#PJM -g gi18
+#PJM --norestart
+#PJM --mpi "proc=48"
+#PJM --omp "thread=17"
+
+set DIR=%%DIR%%
+set LDM=gkvp_mpifft.exe
+set NL=gkvp_namelist.%%%
+
+### Run
+cd ${DIR}
+setenv fu05 ${DIR}/${NL}
+
+module load fftw
+set MKL_NUM_THREADS=1
+set KMP_HW_SUBSET=1T; unset KMP_AFFINITY;       # = No hyperthreading
+#set KMP_HW_SUBSET=4T; set KMP_AFFINITY=compact; # = Hyperthreads
+set OMP_NUM_THREADS=17;   # = OpenMP threads per MPI process
+set I_MPI_PIN_DOMAIN=17;  # = (Used cores*hyperthreads per node)/(MPI process per node)
+set I_MPI_PERHOST=4;      # = MPI process per node
+
+date
+#mpiexec.hydra -n ${PJM_MPI_PROC} -gtool "amplxe-cl -collect hpc-performance -r perform:0-3" ${DIR}/${LDM}
+mpiexec.hydra -n ${PJM_MPI_PROC} ${DIR}/${LDM}
+date 
+touch complete
+

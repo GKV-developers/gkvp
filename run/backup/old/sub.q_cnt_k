@@ -1,0 +1,80 @@
+#!/bin/sh
+
+###  NOTE  ###
+###    Process number x Thread number =< 8 Cores x Node numbers
+###    Node configurations: 1D - 24576
+###                         2D - 144x576
+###                         3D - 54x48x32
+###    Available resource groups:
+###      small           #    1-  384 nodes, 24 hour (  384; 144x 64; 48x 6x32)
+###      large           #  385-36864 nodes, 24 hour (36864; 144x512; 48x48x32)
+###      huge            #36865-82944 nodes,  8 hour (82944; 144x576; 48x54x32)
+###      interact        #    1-  384 nodes,  1 hour (  384; 144x 64; 48x 6x32)
+###
+###    To submit a interactive job, "pjsub --interact sub.q"
+###                    a batch job, "pjsub sub.q"
+###            To check job status, "pjstat" for step jobs "pjstat -E"
+###                  To delete job, "pjdel JOBID"
+###     To show budget information, "k_accountj"
+###             To show disk quota, "k_accountd"
+##############
+
+#PJM --rsc-list "rscgrp=large"
+#### --rsc-list "node=12x8x8"
+#PJM --rsc-list "node=768"
+#PJM --rsc-list "elapse=24:00:00"
+#### --mpi "rank-map-hostfile=myrankmap"
+#PJM -j
+#PJM -s
+#
+#PJM --stg-transfiles all
+#PJM --mpi "use-rankdir"
+#
+#PJM --vset DIR=%%DIR%%
+#PJM --vset LDM=gkvp_mpifft.exe
+#PJM --vset OLD=%%OLD%%
+#PJM --vset NEW=%%%
+#PJM --vset NL=gkvp_namelist.${NEW}
+#
+#PJM --stgin "rank=* ${DIR}/${LDM} %r:./ldm"
+#PJM --stgin "rank=* ${DIR}/${NL} %r:./nl"
+#### --stgin "rank=* ${DIR}/vmec/* %r:./"
+#### --stgin "rank=* ${DIR}/eqdsk/* %r:./"
+#PJM --stgin "rank=* ${DIR}/cnt/*%06r.cnt.${OLD} %r:./  confirm=no"
+#PJM --stgout "rank=* %r:./*cnt.${NEW} ${DIR}/cnt/  stgout=all"
+#PJM --stgout "rank=* %r:./*log* ${DIR}/log/  stgout=all"
+#PJM --stgout "rank=* %r:./*fxv* ${DIR}/fxv/  stgout=all"
+#PJM --stgout "rank=* %r:./*phi* ${DIR}/phi/  stgout=all"
+#PJM --stgout "rank=* %r:./*Al*  ${DIR}/phi/  stgout=all"
+#PJM --stgout "rank=* %r:./*mom* ${DIR}/phi/  stgout=all"
+#PJM --stgout "rank=* %r:./*trn* ${DIR}/phi/  stgout=all"
+#PJM --stgout "rank=* %r:./*tri* ${DIR}/phi/  stgout=all"
+#PJM --stgout "rank=* %r:./*bln* ${DIR}/hst/  stgout=all"
+#PJM --stgout "rank=* %r:./*ges* ${DIR}/hst/  stgout=all"
+#PJM --stgout "rank=* %r:./*gem* ${DIR}/hst/  stgout=all"
+#PJM --stgout "rank=* %r:./*qes* ${DIR}/hst/  stgout=all"
+#PJM --stgout "rank=* %r:./*qem* ${DIR}/hst/  stgout=all"
+#PJM --stgout "rank=0  0:./*wes* ${DIR}/hst/  stgout=all"
+#PJM --stgout "rank=0  0:./*wem* ${DIR}/hst/  stgout=all"
+#PJM --stgout "rank=0  0:./*eng* ${DIR}/hst/  stgout=all"
+#PJM --stgout "rank=0  0:./*men* ${DIR}/hst/  stgout=all"
+#PJM --stgout "rank=0  0:./*dtc* ${DIR}/hst/  stgout=all"
+#PJM --stgout "rank=0  0:./*mtr* ${DIR}/hst/  stgout=all"
+#PJM --stgout "rank=0  0:./*frq* ${DIR}/hst/  stgout=all"
+#PJM --stgout "rank=0  0:./*dsp* ${DIR}/hst/  stgout=all"
+#### --stgout "rank=* %r:./Fprofd_Stati/* ${DIR}/Fprofd_Stati/"
+
+export PARALLEL=8          # Thread number for automatic parallelization
+export OMP_NUM_THREADS=8   # Thread number for Open MP
+
+# Environment setting
+. /work/system/Env_base
+
+### Run
+export fu05=nl
+date
+#mpiexec ./ldm
+#fapp -C -d ${DIR}/Fprofd_Stati -Impi,hwm -L1 -Hevent=Statistics mpiexec ./ldm
+#fipp -C -d ${DIR}/Fprofd_Stati -Ihwm -Srange mpiexec ./ldm
+mpiexec ./ldm
+date

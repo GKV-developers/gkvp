@@ -1,0 +1,148 @@
+#!/bin/csh
+#
+#  Script for CrayPAT APA (Automatic Profiling Analysis) on JFRS-1
+#
+#     HOW TO USE: First,   ./shoot_CrayPAT sample
+#                 Second,  ./shoot_CrayPAT trace
+#                 Finally, ./shoot_CrayPAT report
+#                          ./shoot_CrayPAT clean
+#
+
+
+#### Environment setting
+set DIR=/work/smaeyama/gkvp/f0.57/test17_rdc_craypat
+set LDM=gkvp_mpifft.exe
+set NL=gkvp_namelist
+set SC=sbatch
+set JS=sub.q
+## For VMEC, set VMCDIR including metric_boozer.bin.dat
+#set VMCDIR=./input_vmec/vmec_sample_nss501ntheta1024nzeta0
+## For IGS, set IGSDIR including METRIC_{axi,boz,ham}.OUT
+set IGSDIR=/home/smaeyama/gkvp/input_eqdsk/shortfall_nss2048ntheta049
+
+
+#### for CrayPAT ###
+if ( $1 == "sample" ) then
+
+  rm -f ${LDM}+pat
+  cp -p ../src/*.o ./
+  touch ${LDM}
+  pat_build ${LDM}
+  rm *.o
+
+else if ( $1 == "trace" ) then
+
+  set DIR=`echo ${DIR} | sed -e 's/\/$//'`
+  set PATDIR=${DIR}/`ls ${DIR} | grep ${LDM}+pat | tail -1`
+  echo "Build a tracing program based on ${PATDIR}/build-options.apa"
+  rm -f ${LDM}+apa
+  cp -p ../src/*.o ./
+  pat_report -o CrayPAT_sampling.txt ${PATDIR}
+  pat_build -O ${PATDIR}/build-options.apa
+  rm *.o
+
+    ### Interactive interface ###
+    echo ""
+    echo -n "  For submiting a tracing job, press [Enter]: "
+    set wkinput=$<
+    echo ""
+    if ( "$wkinput" != "" ) then
+      echo "# Exit without submitting a job."
+      exit
+    endif
+
+else if ( $1 == "report" ) then
+
+  set DIR=`echo ${DIR} | sed -e 's/\/$//'`
+  set APADIR=${DIR}/`ls ${DIR} | grep ${LDM}+apa | tail -1`
+  echo "Tracing report based on ${APADIR}"
+  pat_report -o CrayPAT_tracing.txt ${APADIR}
+  exit
+
+else if ($1 == "clean" ) then
+
+  rm -f CrayPAT_sampling.txt CrayPAT_tracing.txt ${LDM}+pat ${LDM}+apa
+  exit
+
+else
+  echo "First,   ./shoot_CrayPAT sample"
+  echo "Second,  ./shoot_CrayPAT trace"
+  echo "Finally, ./shoot_CrayPAT report"
+  echo "         ./shoot_CrayPAT clean"
+  exit
+endif
+
+
+
+#### Create directories
+set DIR=`echo ${DIR} | sed -e 's/\/$//'`
+mkdir -p ${DIR}/
+mkdir -p ${DIR}/log
+mkdir -p ${DIR}/hst
+mkdir -p ${DIR}/phi
+mkdir -p ${DIR}/fxv
+mkdir -p ${DIR}/cnt
+if ( ! -e "${LDM}" ) then
+  echo "No EXE file!"; exit
+endif
+cp ./${LDM}* ${DIR}
+cp ./Makefile ${DIR}
+cp -r ../src ${DIR}
+cp -r ../lib ${DIR}
+if ( ${?VMCDIR} ) then
+  if ( ${VMCDIR} != "" ) then
+    mkdir -p ${DIR}/vmec
+    cp ${VMCDIR}/* ${DIR}/vmec
+  endif
+endif
+if ( ${?IGSDIR} ) then
+  if ( ${IGSDIR} != "" ) then
+    mkdir -p ${DIR}/eqdsk
+    cp ${IGSDIR}/METRIC*.OUT ${DIR}/eqdsk
+  endif
+endif
+
+
+
+#### Submit jobs
+set i = 1
+set iend = 1
+set j = $3
+while( $i <= $iend )
+
+  date
+
+  ## Creating a procedure file
+  set ia = `echo $i | awk '{printf ("%03d",$1)}'`
+  set fln_JS = `echo $JS\.$ia`
+  set fln_NL = `echo $NL\.$ia`
+  cat ${JS} | sed -e "s/%%%/$ia/" | sed -e "s|%%DIR%%|${DIR}|" > ${fln_JS}
+  if ( $1 == "sample" ) then
+    sed -i -e 's/srun ${DIR}\/${LDM}/srun ${DIR}\/${LDM}+pat/' ${fln_JS}
+  else if ( $1 == "trace" ) then
+    sed -i -e 's/srun ${DIR}\/${LDM}/srun ${DIR}\/${LDM}+apa/' ${fln_JS}
+  endif
+  cat ${NL} | sed -e "s/%%%/$ia/" | sed -e "s|%%DIR%%|${DIR}|" > ${fln_NL}
+  chmod u+x ${fln_JS}
+  cp ./${fln_NL} ${DIR}
+  cp ./${fln_JS} ${DIR}
+
+  ## Submitting a job
+  #echo "*** submit job ${fln_JS} ***"
+  #${SC} ${fln_JS}
+  if ( $j == "" && $i == 1 ) then
+    echo "*** submit first step job ${fln_JS} ***"
+    ${SC} ${fln_JS} | tee shoottempfile
+    set j = `awk '{print $4}' shoottempfile`
+    rm shoottempfile
+  else
+    echo "*** submit sequential step job ${fln_JS} ***"
+    ${SC} --dependency=afterok:$j ${fln_JS} | tee shoottempfile
+    set j = `awk '{print $4}' shoottempfile`
+    rm shoottempfile
+  endif
+
+  sleep 1
+  @ i++
+
+end

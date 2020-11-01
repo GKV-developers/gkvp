@@ -1,0 +1,88 @@
+#!/bin/sh
+
+###  NOTE  ###
+###  ITO supercomputer, sub-system A (Kyushu Univ. 2018-)
+###
+###  - Computation nodes
+###      CPU: Intel Xeon Gold 6154 (3.0GHz, 18core) x2 per node
+###      Peak performance: 3456 GFLOPS per node
+###      Memory: 192 GB per node
+###      Memory Bandwidth: 255.9 GB/s per node
+###
+###      Therefore, a recommended GKV parallelization may be 
+###          (MPI Processes)x(OpenMP Threads)
+###          =(18 Physical cores)x(2 CPUs)x(Node numbers)
+###
+###  - Interconnect
+###      InfiniBand EDR 4x (100 Gbps)
+###
+###  - Job class
+###      ito-ss-dbg  : 1 - 1   nodes,  1 hour, 168GB/nodes ?run/?submit
+###      ito-s-dbg   : 1 - 4   nodes,  1 hour, 168GB/nodes ?run/?submit
+###      ito-m-dbg   : 1 - 16  nodes,  1 hour, 168GB/nodes ?run/?submit
+###      ito-l-dbg   : 1 - 64  nodes,  1 hour, 168GB/nodes ?run/?submit
+###      ito-xl-dbg  : 1 - 128 nodes,  1 hour, 168GB/nodes ?run/?submit
+###      ito-xxl-dbg : 1 - 256 nodes,  1 hour, 168GB/nodes ?run/?submit
+###      ito-ss      : 1 - 1   nodes, 96 hour, 168GB/nodes ?run/?submit
+###      ito-s       : 1 - 4   nodes, 48 hour, 168GB/nodes ?run/?submit
+###      ito-m       : 1 - 16  nodes, 24 hour, 168GB/nodes ?run/?submit
+###      ito-l       : 1 - 64  nodes, 12 hour, 168GB/nodes ?run/?submit
+###      ito-xl      : 1 - 128 nodes,  6 hour, 168GB/nodes ?run/?submit
+###      ito-xxl     : 1 - 256 nodes,  6 hour, 168GB/nodes ?run/?submit
+###
+###  - Commands
+###      (Submit a batch job : "pjsub sub.q") Use shoot script for GKV.
+###      Check job status    : "pjstat" or "pjstat -E" for step jobs
+###      Delete job          : "pjdel JOBID"
+###      Show budget info    : "qrepuse"
+###      Show disk usage     : "qrepquota"
+##############
+
+#PJM -L "rscunit=ito-a"     # ITO, sub-system A
+#PJM -L "rscgrp=ito-m-dbg"  # Job class
+#PJM -L "vnode=16"          # Number of nodes
+#PJM -L "vnode-core=36"     # Number of cores per node
+#PJM -L "elapse=00:15:00"   # Execute time
+#PJM -j                     # Write error in standard output file
+#PJM -s                     # Job statistics
+
+module load intel
+
+NUM_NODES=$PJM_VNODES       # Number of nodes
+NUM_CORES=36                # Number of cores per node
+NUM_PROCS=96                # MPI processes
+NUM_THREADS=6               # OpenMP threads per MPI
+### NOTE: ${NUM_NODES}*${NUM_CORES}=${NUM_PROCS}*${NUM_THREADS} is recommended.
+
+export I_MPI_PERHOST=`expr $NUM_CORES / $NUM_THREADS`
+export I_MPI_FABRICS=shm:ofi
+export I_MPI_PIN_DOMAIN=omp
+export I_MPI_PIN_CELL=core
+
+export OMP_NUM_THREADS=$NUM_THREADS
+export KMP_STACKSIZE=8m
+export KMP_AFFINITY=compact
+
+export I_MPI_HYDRA_BOOTSTRAP=rsh
+export I_MPI_HYDRA_BOOTSTRAP_EXEC=/bin/pjrsh
+export I_MPI_HYDRA_HOST_FILE=${PJM_O_NODEINF}
+
+
+echo "                  Nodes: ${NUM_NODES}"
+echo "         Cores per node: ${NUM_CORES}"
+echo "          MPI Processes: ${NUM_PROCS}"
+echo " OpenMP threads per MPI: ${NUM_THREADS}"
+
+
+### Working directory 
+DIR=%%DIR%%
+LDM=gkvp_mpifft.exe
+NL=gkvp_namelist.%%%
+
+
+#### Run
+date
+cd ${DIR}
+export fu05=${DIR}/${NL}
+mpiexec.hydra -n $NUM_PROCS ${DIR}/${LDM}
+date

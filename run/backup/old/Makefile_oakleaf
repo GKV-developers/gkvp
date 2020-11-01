@@ -1,0 +1,94 @@
+FC = mpifrtpx
+FFLAGS = -Kfast,parallel,ocl,optmsg=2 -Qt -Cpp -X9 -fs -fw
+#FFLAGS = -Kfast,parallel,ocl,optmsg=2 -Nquickdbg -Qt -Cpp -X9 -fs -fw
+FFLAGS_OMP = -Kopenmp 
+#FFLAGS_OMP = -Kopenmp -Nquickdbg
+
+PROG = 'gkvp_mpifft.exe'
+
+SRC = ../src/
+MYL = ../lib/
+
+MATH = gkvp_math_SSL2
+FFT = gkvp_fft_fftw
+INC = -I/usr/local/fftw/3.3/include
+LIB = -SSL2 -L/usr/local/fftw/3.3/lib64 -lfftw3 -lm
+
+
+gkvp:	$(SRC)gkvp_header.f90\
+	$(SRC)gkvp_mpienv.f90\
+	$(MYL)$(MATH).f90\
+	$(SRC)gkvp_clock.f90\
+	$(SRC)gkvp_intgrl.f90\
+	$(SRC)gkvp_tips.f90\
+	$(SRC)gkvp_vmecin.f90\
+	$(SRC)gkvp_igs.f90\
+	$(SRC)gkvp_bndry.f90\
+	$(SRC)gkvp_colli.f90\
+	$(SRC)$(FFT).f90\
+	$(SRC)gkvp_fld.f90\
+	$(SRC)gkvp_freq.f90\
+	$(SRC)gkvp_zfilter.f90\
+	$(SRC)gkvp_exb.f90\
+	$(SRC)gkvp_trans.f90\
+	$(SRC)gkvp_advnc.f90\
+	$(SRC)gkvp_dtc.f90\
+	$(SRC)gkvp_out.f90\
+	$(SRC)gkvp_set.f90\
+	$(SRC)gkvp_main.f90
+
+	$(FC) $(FFLAGS) -c $(SRC)gkvp_header.f90
+	$(FC) $(FFLAGS) -c $(SRC)gkvp_mpienv.f90
+	$(FC) $(FFLAGS) -c $(MYL)$(MATH).f90
+	$(FC) $(FFLAGS) -c $(SRC)gkvp_clock.f90
+	$(FC) $(FFLAGS) -c $(SRC)gkvp_intgrl.f90
+	$(FC) $(FFLAGS) -c $(SRC)gkvp_tips.f90
+	$(FC) $(FFLAGS) -c $(SRC)gkvp_vmecin.f90
+	$(FC) $(FFLAGS) -c $(SRC)gkvp_igs.f90
+	$(FC) $(FFLAGS) $(FFLAGS_OMP) -c $(SRC)gkvp_bndry.f90
+	$(FC) $(FFLAGS) $(FFLAGS_OMP) -c $(SRC)gkvp_colli.f90
+	$(FC) $(FFLAGS) $(FFLAGS_OMP) -c $(SRC)$(FFT).f90 $(INC)
+	$(FC) $(FFLAGS) -c $(SRC)gkvp_fld.f90
+	$(FC) $(FFLAGS) -c $(SRC)gkvp_freq.f90
+	$(FC) $(FFLAGS) $(FFLAGS_OMP) -c $(SRC)gkvp_zfilter.f90
+	$(FC) $(FFLAGS) $(FFLAGS_OMP) -c $(SRC)gkvp_exb.f90
+	$(FC) $(FFLAGS) $(FFLAGS_OMP) -c $(SRC)gkvp_trans.f90
+	$(FC) $(FFLAGS) $(FFLAGS_OMP) -c $(SRC)gkvp_advnc.f90
+	$(FC) $(FFLAGS) -c $(SRC)gkvp_dtc.f90
+	$(FC) $(FFLAGS) $(FFLAGS_OMP) -c $(SRC)gkvp_out.f90
+	$(FC) $(FFLAGS) -c $(SRC)gkvp_set.f90
+	$(FC) $(FFLAGS) -c $(SRC)gkvp_main.f90
+
+	$(FC) $(FFLAGS)	$(FFLAGS_OMP) \
+			gkvp_header.o\
+			gkvp_mpienv.o\
+			$(MATH).o\
+			gkvp_clock.o\
+			gkvp_intgrl.o\
+			gkvp_tips.o\
+			gkvp_vmecin.o\
+			gkvp_igs.o\
+			gkvp_bndry.o\
+			gkvp_colli.o\
+			$(FFT).o\
+			gkvp_fld.o\
+			gkvp_freq.o\
+			gkvp_zfilter.o\
+			gkvp_exb.o\
+			gkvp_trans.o\
+			gkvp_advnc.o\
+			gkvp_dtc.o\
+			gkvp_out.o\
+			gkvp_set.o\
+                        gkvp_main.o\
+			-o $(PROG) $(LIB)
+
+	\cp *.lst *.o *.mod ../src/
+	\rm -f *.lst *.o *.mod
+
+clean:
+	rm -f ../src/*.o ../src/*.mod ../src/*.lst ./*.exe ./sub.q.*.o*
+
+clear:
+	rm -f ./*.o ./*.mod ./*.lst ./*namelist.* ./sub.q.*
+ 

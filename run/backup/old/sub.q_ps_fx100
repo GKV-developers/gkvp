@@ -1,0 +1,69 @@
+#!/bin/csh
+
+###  NOTE  ###
+###   MPI Processes x OpenMP Threads =< 32 Cores x Node numbers
+###
+###   Plasma Simulator computation nodes
+###     CPU: Fujitsu SPARC64XIfx (2.4GHz, 32+2core) x1 per node
+###     Peak performance: 1011 GFLOPS per node
+###     Memory: 32 GB per node
+###     Memory Bandwidth: 240 GB/s x2 (in/out) per node
+###     L2 Cache: 24MB per node
+###     Interconnect: Tofu2 6D mesh/torus
+###     Interconnect Bandwidth: 12.5 GB/s per link
+###
+###   Available resource groups for Plasma Simulator:
+###     small        #     1 - 12   nodes, 15 min., 32GB/nodes  1run/1submit
+###     medium       #    25 - 792  nodes,  5 hour, 32GB/nodes  4run/16submit
+###     large1h      #  1921 - 2160 nodes,  1 hour, 32GB/nodes  1run/2submit
+###     large        #  1921 - 2160 nodes, 10 hour, 32GB/nodes  1run/4submit
+###   Available resource groups for LHD analysis server:
+###     X24          #     1 - 24   nodes, 24 hour, 32GB/nodes 16run/32submit
+###
+###   Priority of resource groups
+###     Tue 9:00 - Fri 17:00 # medium = small > large1h = laege
+###     Fri 18:00 - Tue 9:00 # large1h = large > medium = small
+###             
+###   To submit a interactive job, "pjsub --interact sub.q"
+###                   a batch job, "pjsub sub.q"
+###           To check job status, "pjstat" for step jobs "pjstat -E"
+###                 To delete job, "pjdel JOBID"
+###    To show budget information, "pstime"
+##############
+
+
+#PJM -L "rscunit=fx"
+#PJM -L "rscgrp=X24"
+#PJM -L "node=8"
+#PJM -L "elapse=00:05:00"
+#PJM -j
+#PJM -s
+#PJM --mpi "proc=64"
+#### --mpi "rank-map-hostfile=myrankmap"
+#PJM -g 19315
+
+## Note that Max. core num. per 1 node on PS is 32. 
+
+setenv PARALLEL 4          # Thread number for automatic parallelization
+setenv OMP_NUM_THREADS 4   # Thread number for Open MP
+
+
+set DIR=%%DIR%%
+set LDM=gkvp_mpifft.exe
+set NL=gkvp_namelist.%%%
+
+### Run
+cd ${DIR}
+setenv fu05 ${DIR}/${NL}
+
+module load fftw-fx/3.3.4
+#module load fftw-fx/3.3.4-4simd
+
+date
+#rm -rf ${DIR}/Fprofd*
+#fapp -C -d ${DIR}/Fprofd_Stati -Impi,hwm -L1 -Hevent=Statistics        mpiexec ${DIR}/${LDM}
+#fapp -C -d ${DIR}/Fprofd_SIMD  -Impi,hwm -L1 -Hevent=Instructions_SIMD mpiexec ${DIR}/${LDM}
+#fapp -C -d ${DIR}/Fprofd_MEM   -Impi,hwm -L1 -Hevent=MEM_access        mpiexec ${DIR}/${LDM}
+#fipp -C -d ${DIR}/Fprofd_Stati -Ihwm -Srange mpiexec ${DIR}/${LDM}
+mpiexec ${DIR}/${LDM}
+date 

@@ -1,0 +1,88 @@
+#!/bin/csh
+#
+#  Script for step job submission
+#
+#     HOW TO USE: ./shoot [START_NUMBER] [END_NUMBER]
+#
+
+
+#### Environment setting
+set DIR=/csc/workdir3/smaeyama/gkvp/f0.57/rev15/
+set LDM=gkvp_mpifft.exe
+set NL=gkvp_namelist
+set SC=sbatch
+set JS=sub.q
+## For VMEC, set VMCDIR including NEWBOZ and VMEC data
+#set VMCDIR=/home/maeyama/gkvp/lhd_equilibrium/sample/
+## For IGS, set IGSDIR including METRIC*.OUT
+#set IGSDIR=/home/maeyama/gkvp/aug_equilibrium/metriclist/igs_nss065ntheta049/field/
+
+
+
+#### Create directories
+set DIR=`echo ${DIR} | sed -e 's/\/$//'`
+mkdir -p ${DIR}/
+mkdir -p ${DIR}/log
+mkdir -p ${DIR}/hst
+mkdir -p ${DIR}/phi
+mkdir -p ${DIR}/fxv
+mkdir -p ${DIR}/cnt
+if ( ! -e "${LDM}" ) then
+  echo "No EXE file!"; exit
+endif
+cp ./${LDM} ${DIR}
+cp ./Makefile ${DIR}
+cp -r ../src ${DIR}
+cp -r ../lib ${DIR}
+if ( ${?VMCDIR} ) then
+  if ( ${VMCDIR} != "" ) then
+    mkdir -p ${DIR}/vmec
+    cp ${VMCDIR}/* ${DIR}/vmec
+  endif
+endif
+if ( ${?IGSDIR} ) then
+  if ( ${IGSDIR} != "" ) then
+    mkdir -p ${DIR}/eqdsk
+    cp ${IGSDIR}/METRIC*.OUT ${DIR}/eqdsk
+  endif
+endif
+
+
+
+#### Submit jobs
+set i = $1
+set iend = $2
+set j = $3
+while( $i <= $iend )
+
+  date
+
+  ## Creating a procedure file
+  set ia = `echo $i | awk '{printf ("%03d",$1)}'`
+  set fln_JS = `echo $JS\.$ia`
+  set fln_NL = `echo $NL\.$ia`
+  cat ${JS} | sed -e "s/%%%/$ia/" | sed -e "s|%%DIR%%|${DIR}|" > ${fln_JS}
+  cat ${NL} | sed -e "s/%%%/$ia/" | sed -e "s|%%DIR%%|${DIR}|" > ${fln_NL}
+  chmod u+x ${fln_JS}
+  cp ./${fln_NL} ${DIR}
+  cp ./${fln_JS} ${DIR}
+
+  ## Submitting a job
+  #echo "*** submit job ${fln_JS} ***"
+  #${SC} ${fln_JS}
+  if ( $j == "" && $i == $1 ) then
+    echo "*** submit first step job ${fln_JS} ***"
+    ${SC} ${fln_JS} | tee shoottempfile
+    set j = `awk '{print $4}' shoottempfile`
+    rm shoottempfile
+  else
+    echo "*** submit sequential step job ${fln_JS} ***"
+    ${SC} --dependency=afterok:$j ${fln_JS} | tee shoottempfile
+    set j = `awk '{print $4}' shoottempfile`
+    rm shoottempfile
+  endif
+
+  sleep 1
+  @ i++
+
+end

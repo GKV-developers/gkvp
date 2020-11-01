@@ -1,0 +1,133 @@
+#!/bin/csh
+#
+#  Script for step job submission
+#
+#     HOW TO USE: ./shoot [START_NUMBER] [END_NUMBER]
+#
+
+
+#### Available HPC systems
+# HELIOS  : Helios supercomputer, Bullx B510 (IFERC)
+# PS      : Plasma simulator, Fujitsu FX100 (NIFS)
+# NU      : NU FX100, Fujitsu FX100 (Nagoya Univ.)
+# OAKLEAF : Oakleaf-fx, Fujitsu FX10 (Univ. Tokyo)
+# K       : K computer, Fujitsu K computer (RIKEN)
+set HPC=PS
+
+#### For IGS, set IGSDIR including METRIC*.OUT
+#set IGSDIR=/home/maeyama/gkvp/f0.52/AUGEM/aug_equilibrium/metriclist/igs_nss065ntheta049/field/
+set IGSDIR=
+
+
+
+#### Set directories
+if ( ${HPC} == "" ) then
+  echo "Choose HPC system: HELIOS, PS, NU, OAKLEAF, K"
+  exit
+
+else if ( ${HPC} == "HELIOS" ) then
+  set DIR=/csc/workdir3/smaeyama/gkvp/f0.52/rev14/
+  set LDM=gkvp_mpifft.exe
+  set NL=gkvp_f0.52_namelist
+  set SC=sbatch
+  set JS=sub.q
+
+else if ( ${HPC} == "PS" ) then
+  set DIR=/data/lng/maeyama/gkvp/f0.52/rev14/
+  set LDM=gkvp_mpifft.exe
+  set NL=gkvp_f0.52_namelist
+  set SC=pjsub
+  set JS=sub.q
+
+else if ( ${HPC} == "NU" ) then
+  set DIR=/large2/z41049a/gkvp/f0.52/rev14/
+  set LDM=gkvp_mpifft.exe
+  set NL=gkvp_f0.52_namelist
+  set SC=pjsub
+  set JS=sub.q
+
+else if ( ${HPC} == "OAKLEAF" ) then
+  set DIR=/group2/gc15/c15064/gkvp/f0.52/rev14/
+  set LDM=gkvp_mpifft.exe
+  set NL=gkvp_f0.52_namelist
+  set SC=pjsub
+  set JS=sub.q
+
+else if ( ${HPC} == "K" ) then
+  set DIR=/data/hp120011/maeyama/gkvp/f0.52/rev14/
+  set LDM=gkvp_mpifft.exe
+  set NL=gkvp_f0.52_namelist
+  set SC=pjsub
+  set JS=sub.q
+  #set JS=sub.q_cnt
+
+else
+  echo "The HPC system is not available. HPC = "${HPC}
+  exit
+endif
+
+
+
+#### Create directories
+mkdir -p ${DIR}/
+mkdir -p ${DIR}/log
+mkdir -p ${DIR}/hst
+mkdir -p ${DIR}/phi
+mkdir -p ${DIR}/fxv
+mkdir -p ${DIR}/cnt
+
+if ( ! -e "${LDM}" ) then
+  echo "No EXE file! Compile" ${LDM}
+  exit
+endif
+cp ./${LDM} ${DIR}
+#cp ./${NL} ${DIR}
+#cp ./${JS} ${DIR}
+cp ./Makefile ${DIR}
+cp -r ../src ${DIR}
+cp -r ../lib ${DIR}
+
+if ( ${?IGSDIR} ) then
+  if ( ${IGSDIR} != "" ) then
+    mkdir -p ${DIR}/eqdsk
+    cp ${IGSDIR}/METRIC*.OUT ${DIR}/eqdsk
+  endif
+endif
+
+
+#### Submit jobs
+set i = $1
+set iend = $2
+set j = $3
+while( $i <= $iend )
+
+  date
+
+  echo "*** creating a procedure file ***"
+
+  set ia = `echo $i | awk '{printf ("%03d",$1)}'`
+  set fln_JS = `echo $JS\.$ia`
+  set fln_NL = `echo $NL\.$ia`
+
+  cat $JS | sed -e "s/%%%/$ia/" | sed -e "s|%%DIR%%|${DIR}|" > $fln_JS
+  cat $NL | sed -e "s/%%%/$ia/" | sed -e "s|%%DIR%%|${DIR}|" > $fln_NL
+  chmod u+x $fln_JS
+  cp ./$fln_NL ${DIR}
+  cp ./$fln_JS ${DIR}
+
+  echo "*** submitting" $fln_JS"***"
+##single job
+#  ${SC} $fln_JS
+##for job sequence
+##fist
+  ${SC} --step --sparam "sn=$i" $fln_JS
+  echo "${SC} --step --sparam 'sn=$i' $fln_JS"
+##sequence
+#  ${SC} --step --sparam "jid=$j,sd=ec!=0:all" $fln_JS
+
+  sleep 1
+
+  @ i++
+
+end
+#

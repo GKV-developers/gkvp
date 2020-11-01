@@ -1,0 +1,91 @@
+FC = mpifrt
+FFLAGS = -Kfast,parallel,pmsg,ocl,prefetch -Qt -Cpp -X9
+FFLAGS_OMP = -KOMP
+
+PROG = 'gkvp_mpifft.exe'
+
+SRC = ../src/
+MYL = ../lib/
+
+MATH = gkvp_f0.41_math_SSL2
+FFT = gkvp_f0.41_fft_fftw
+INC = -I/sysdata/center/shien/FFTW/fftw3.2.2/include
+LIB = -SSL2 -L/sysdata/center/shien/FFTW/fftw3.2.2/lib -lfftw3 -lm
+
+ 
+gkvp:	$(SRC)gkvp_f0.41_header.f90\
+	$(SRC)gkvp_f0.41_mpienv.f90\
+	$(MYL)$(MATH).f90\
+	$(SRC)gkvp_f0.41_clock.f90\
+	$(SRC)gkvp_f0.41_intgrl.f90\
+	$(SRC)gkvp_f0.41_tips.f90\
+	$(SRC)gkvp_f0.41_vmecin.f90\
+	$(SRC)gkvp_f0.41_igs.f90\
+	$(SRC)gkvp_f0.41_bndry.f90\
+	$(SRC)gkvp_f0.41_colli.f90\
+	$(SRC)$(FFT).f90\
+	$(SRC)gkvp_f0.41_fld.f90\
+	$(SRC)gkvp_f0.41_freq.f90\
+	$(SRC)gkvp_f0.41_zfilter.f90\
+	$(SRC)gkvp_f0.41_exb.f90\
+	$(SRC)gkvp_f0.41_trans.f90\
+	$(SRC)gkvp_f0.41_advnc.f90\
+	$(SRC)gkvp_f0.41_dtc.f90\
+	$(SRC)gkvp_f0.41_out.f90\
+	$(SRC)gkvp_f0.41_set.f90\
+	$(SRC)gkvp_f0.41_main.f90
+
+	$(FC) $(FFLAGS) -c $(SRC)gkvp_f0.41_header.f90
+	$(FC) $(FFLAGS) -c $(SRC)gkvp_f0.41_mpienv.f90
+	$(FC) $(FFLAGS) -c $(MYL)$(MATH).f90
+	$(FC) $(FFLAGS) -c $(SRC)gkvp_f0.41_clock.f90
+	$(FC) $(FFLAGS) $(FFLAGS_OMP) -c $(SRC)gkvp_f0.41_intgrl.f90
+	$(FC) $(FFLAGS) -c $(SRC)gkvp_f0.41_tips.f90
+	$(FC) $(FFLAGS) -c $(SRC)gkvp_f0.41_vmecin.f90
+	$(FC) $(FFLAGS) -c $(SRC)gkvp_f0.41_igs.f90
+	$(FC) $(FFLAGS) $(FFLAGS_OMP) -c $(SRC)gkvp_f0.41_bndry.f90
+	$(FC) $(FFLAGS) $(FFLAGS_OMP) -c $(SRC)gkvp_f0.41_colli.f90
+	$(FC) $(FFLAGS) $(FFLAGS_OMP) -c $(SRC)$(FFT).f90 $(INC)
+	$(FC) $(FFLAGS) -c $(SRC)gkvp_f0.41_fld.f90
+	$(FC) $(FFLAGS) -c $(SRC)gkvp_f0.41_freq.f90
+	$(FC) $(FFLAGS) $(FFLAGS_OMP) -c $(SRC)gkvp_f0.41_zfilter.f90
+	$(FC) $(FFLAGS) $(FFLAGS_OMP) -c $(SRC)gkvp_f0.41_exb.f90
+	$(FC) $(FFLAGS) $(FFLAGS_OMP) -c $(SRC)gkvp_f0.41_trans.f90
+	$(FC) $(FFLAGS) $(FFLAGS_OMP) -c $(SRC)gkvp_f0.41_advnc.f90
+	$(FC) $(FFLAGS) -c $(SRC)gkvp_f0.41_dtc.f90
+	$(FC) $(FFLAGS) $(FFLAGS_OMP) -c $(SRC)gkvp_f0.41_out.f90
+	$(FC) $(FFLAGS) -c $(SRC)gkvp_f0.41_set.f90
+	$(FC) $(FFLAGS) -c $(SRC)gkvp_f0.41_main.f90
+
+	$(FC) $(FFLAGS)	$(FFLAGS_OMP) \
+			gkvp_f0.41_header.o\
+			gkvp_f0.41_mpienv.o\
+			$(MATH).o\
+			gkvp_f0.41_clock.o\
+			gkvp_f0.41_intgrl.o\
+			gkvp_f0.41_tips.o\
+			gkvp_f0.41_vmecin.o\
+			gkvp_f0.41_igs.o\
+			gkvp_f0.41_bndry.o\
+			gkvp_f0.41_colli.o\
+			$(FFT).o\
+			gkvp_f0.41_fld.o\
+			gkvp_f0.41_freq.o\
+			gkvp_f0.41_zfilter.o\
+			gkvp_f0.41_exb.o\
+			gkvp_f0.41_trans.o\
+			gkvp_f0.41_advnc.o\
+			gkvp_f0.41_dtc.o\
+			gkvp_f0.41_out.o\
+			gkvp_f0.41_set.o\
+                        gkvp_f0.41_main.o\
+			-o $(PROG) $(LIB)
+
+	\cp *.lst *.o *.mod ../src/
+	\rm -f *.lst *.o *.mod
+
+clean:
+	rm -f ../src/*.o ../src/*.mod ../src/*.lst ./*.exe ./CompileList.txt ./*q.o* ./*q.e*
+
+clear:
+	rm -f ./*.o ./*.mod ./*.lst

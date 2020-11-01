@@ -1,0 +1,55 @@
+#!/bin/csh
+
+###  NOTE  ###
+###    Process number x Thread number =< Parallelization
+###    Total job weight =< 24. 
+###    "mpiexec" requires process number with "-n" option.
+###
+###    To submit a interactive job, "qsub -I sub.q"
+###                    a batch job, "qsub sub.q"
+##############
+
+### Queue name
+# h128    #  128 parallelization, 12 hour,   320GB, weight 1
+#@$-q h512    #  512 parallelization, 12 hour,  1280GB, weight 1
+# h4096   # 4096 parallelization, 24 hour, 10240GB, weight 2
+# t256    #  256 parallelization,  1 hour,   640GB, weight 1, interactive queue
+# t32     #   32 parallelization, 30 min.,    80GB, weight 1, interactive queue
+# n128    #  128 parallelization,  6 hour,   320GB, weight 1, low priority
+# n512    #  512 parallelization,  6 hour,  1280GB, weight 1, low priority
+# n1024   # 1024 parallelization,  6 hour,  2560GB, weight 2, low priority
+# n4096   # 4096 parallelization,  6 hour, 10240GB, weight 2, low priority
+
+### Program name
+#@$-C GKV
+
+### Process number
+#@$-lP 128
+
+### Thread number
+#@$-lp 4
+
+### Closing time
+# 00:30:00
+# 01:00:00
+# 06:00:00
+#@$-cp 12:00:00
+# 24:00:00
+
+### Additional option
+#@$-oi        # Output statistic information.
+#@$-nr        # Prevent restart when system errors occur.
+
+setenv PARALLEL 4          # Thread number for automatic parallelization
+setenv OMP_NUM_THREADS 4   # Thread number for Open MP
+
+
+set DIR=/work/g9/a124009/gkvp/f0.41/test01/
+set LDM=gkvp_mpifft.exe
+set NL=gkvp_f0.41_namelist.001
+
+### Run
+cd ${DIR}
+setenv fu05 ${DIR}/${NL}
+mpiexec -n 128 ${DIR}/${LDM}
+

@@ -1,0 +1,19 @@
+#!/bin/sh
+
+export PMIX_MCA_gds=hash
+export OMP_NUM_THREADS=1  # Number of OpenMP thread
+
+
+### Working directory 
+DIR=%%DIR%%
+LDM=gkvp_mpifft.exe
+NL=gkvp_namelist.%%%
+
+
+#### Run
+date
+cd ${DIR}
+export fu05=${DIR}/${NL}
+mpirun -n 8 --oversubscribe ${DIR}/${LDM}
+  # -n        "Total number of MPI processes"
+date

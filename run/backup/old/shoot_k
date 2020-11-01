@@ -1,0 +1,94 @@
+#!/bin/csh
+#
+#  Script for step job submission
+#
+#     HOW TO USE: ./shoot [START_NUMBER] [END_NUMBER]
+#
+
+
+#### Environment setting
+set DIR=/data/hp150279/maeyama/gkvp/f0.57/gkv_training/
+set LDM=gkvp_mpifft.exe
+set NL=gkvp_namelist
+set SC=pjsub
+set JS1=sub.q_init
+set JS2=sub.q_cnt
+## For VMEC, set VMCDIR including metric_boozer.bin.dat
+#set VMCDIR=./input_vmec/vmec_sample_nss501ntheta1024nzeta0
+## For IGS, set IGSDIR including METRIC_{axi,boz,ham}.OUT
+set IGSDIR=./input_eqdsk/igs_sample_nss21ntheta33/
+
+
+
+#### Create directories
+set DIR=`echo ${DIR} | sed -e 's/\/$//'`
+mkdir -p ${DIR}/
+mkdir -p ${DIR}/log
+mkdir -p ${DIR}/hst
+mkdir -p ${DIR}/phi
+mkdir -p ${DIR}/fxv
+mkdir -p ${DIR}/cnt
+if ( ! -e "${LDM}" ) then
+  echo "No EXE file!"; exit
+endif
+cp ./${LDM} ${DIR}
+cp ./Makefile ${DIR}
+cp -r ../src ${DIR}
+cp -r ../lib ${DIR}
+if ( ${?VMCDIR} ) then
+  if ( ${VMCDIR} != "" ) then
+    mkdir -p ${DIR}/vmec
+    cp ${VMCDIR}/* ${DIR}/vmec
+  endif
+endif
+if ( ${?IGSDIR} ) then
+  if ( ${IGSDIR} != "" ) then
+    mkdir -p ${DIR}/eqdsk
+    cp ${IGSDIR}/METRIC*.OUT ${DIR}/eqdsk
+  endif
+endif
+
+
+
+#### Submit jobs
+set i = $1
+set iend = $2
+set j = $3
+while( $i <= $iend )
+
+  if ( $i == 1 ) then
+    set JS = ${JS1}
+  else
+    set JS = ${JS2}
+  endif
+
+  date
+
+  ## Creating a procedure file
+  set ia = `echo $i | awk '{printf ("%03d",$1)}'`
+  set ib = `echo $i | awk '{printf ("%03d",$1-1)}'`
+  set fln_JS = `echo $JS\.$ia`
+  set fln_NL = `echo $NL\.$ia`
+  cat ${JS} | sed -e "s/%%%/$ia/" | sed -e "s|%%DIR%%|${DIR}|" | sed -e "s/%%OLD%%/$ib/" > ${fln_JS}
+  cat ${NL} | sed -e "s/%%%/$ia/" | sed -e "s|%%DIR%%/.../|\./|" > ${fln_NL}
+  chmod u+x ${fln_JS}
+  cp ./${fln_NL} ${DIR}
+  cp ./${fln_JS} ${DIR}
+
+  ## Submitting a job
+  #echo "*** submit job ${fln_JS} ***"
+  #${SC} ${fln_JS}
+  if ( $j == "" && $i == $1 ) then
+    echo "*** submit first step job ${fln_JS} ***"
+    ${SC} --step --sparam "sn=$i" ${fln_JS} | tee shoottempfile
+    set j = `awk '{sub("_.*",""); print $6}' shoottempfile`
+    rm shoottempfile
+  else
+    echo "*** submit sequential step job ${fln_JS} ***"
+    ${SC} --step --sparam "jid=$j,sd=ec!=0:all" ${fln_JS}
+  endif
+
+  sleep 1
+  @ i++
+
+end

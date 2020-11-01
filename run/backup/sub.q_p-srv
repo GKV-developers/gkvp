@@ -1,0 +1,55 @@
+#!/bin/sh
+################################################################################
+#
+#  Configuration
+#
+#     p-srv1 : Log-in node      (CPU:  4 Cores x 2, Memory:  32 GB)
+#      vt001 : Computation node (CPU: 10 Cores x 2, Memory: 128 GB)
+#      vt002 : Computation node (CPU: 10 Cores x 2, Memory: 128 GB)
+#      vt003 : Computation node (CPU: 10 Cores x 2, Memory: 128 GB)
+#      vt004 : Computation node (CPU: 10 Cores x 2, Memory: 128 GB)
+#      vt005 : Computation node (CPU: 10 Cores x 2, Memory: 128 GB)
+#      vt006 : Computation node (CPU: 10 Cores x 2, Memory: 128 GB)
+#
+#  How to use job scheduling software "Torque"
+#
+#    Submission : qsub sub.q  (where "sub.q" is name of script file)
+#    Delete job : qdel jobID  (where "jobID" is number of job, e.g., 15, 16)
+#    Check jobs : qstat -a
+#    Check node : pbsnodes -a
+#
+#   Options : #PBS -l nodes=1:ppn=10     # Number of nodes & cores per node
+#             #PBS -l mem=64gb           # Memory size
+#             #PBS -l walltime=00:01:00  # Elapsed time limit
+#             #PBS -N TEST               # Job name
+#             
+#             #PBS -l nodes=vt005.phys.nagoya-u.ac.jp:ppn=16+vt006.phys.nagoya-u.ac.jp:ppn=16
+#                                        # Specifying computation nodes
+#
+################################################################################
+
+#PBS -l nodes=1:ppn=20
+#PBS -l mem=512gb
+#PBS -l walltime=00:06:00
+
+export OMP_NUM_THREADS=1  # Number of OpenMP thread
+export MKL_NUM_THREADS=1  # Use thread-safe MKL libray from multi-thread OpenMP
+ulimit -c 0
+ulimit -s unlimited       # System stack memory size
+export KMP_STACKSIZE=6G   # OpenMP stack memory size (per thread)
+
+
+### Working directory 
+DIR=%%DIR%%
+LDM=gkvp_mpifft.exe
+NL=gkvp_namelist.%%%
+
+
+date
+cd ${DIR}
+export fu05=${DIR}/${NL}
+mpirun -n 16 -npernode 16 ${DIR}/${LDM}
+  # -n        "Total number of MPI processes"
+  # -npernode "Number of MPI processes per node"
+date
+touch complete

@@ -1,0 +1,85 @@
+#!/bin/sh
+#
+#  Script for step job submission
+#
+#     HOW TO USE: ./shoot [START_NUMBER] [END_NUMBER]
+#
+#     When one wants to continue simulation runs after [JOB-ID],
+#                 ./shoot [START_NUMBER] [END_NUMBER] [JOB-ID]
+#
+
+if [ $# -lt 2 ]; then
+  echo "HOW TO USE: ./shoot [START_NUMBER] [END_NUMBER] ([JOB-ID])"
+  exit
+fi
+if [ -n "$3" ]; then
+  echo "[JOB-ID] is not supported on Mac."
+  exit
+fi
+
+#### Environment setting
+DIR=`pwd`/data_test01
+LDM=gkvp_mpifft.exe
+NL=gkvp_namelist
+#SC=pjsub
+JS=sub.q
+### For VMEC, set VMCDIR including metric_boozer.bin.dat
+#VMCDIR=./input_vmec/vmec_sample_nss501ntheta1024nzeta0
+### For IGS, set IGSDIR including METRIC_{axi,boz,ham}.OUT
+#IGSDIR=../../input_eqdsk_for_eqdskbench/
+
+
+
+#### Create directories
+DIR=`echo ${DIR} | sed -e 's/\/$//'`
+mkdir -p ${DIR}/
+mkdir -p ${DIR}/log/
+mkdir -p ${DIR}/hst/
+mkdir -p ${DIR}/phi/
+mkdir -p ${DIR}/fxv/
+mkdir -p ${DIR}/cnt/
+if [ ! -e "${LDM}" ]; then
+  echo "No EXE file!"; exit
+fi
+cp ./${LDM} ${DIR}
+cp ./Makefile ${DIR}
+cp -r ../src ${DIR}
+cp -r ../lib ${DIR}
+if [ ! -z "${VMCDIR}" ]; then #$VMCDIR is neither undefined nor null.
+  mkdir -p ${DIR}/vmec/
+  cp ${VMCDIR}/* ${DIR}/vmec/
+fi
+if [ ! -z "${IGSDIR}" ]; then #$IGSDIR is neither undefined nor null.
+  mkdir -p ${DIR}/eqdsk/
+  cp ${IGSDIR}/METRIC*.OUT ${DIR}/eqdsk/
+fi
+
+
+
+#### Submit jobs
+i=$1
+iend=$2
+j=$3
+while [ $i -le $iend ]
+do
+
+  date
+
+  ## Creating a procedure file
+  ia=`echo $i | awk '{printf ("%03d",$1)}'`
+  fln_JS=`echo $JS\.$ia`
+  fln_NL=`echo $NL\.$ia`
+  cat ${JS} | sed -e "s/%%%/$ia/" | sed -e "s|%%DIR%%|${DIR}|" > ${fln_JS}
+  cat ${NL} | sed -e "s/%%%/$ia/" | sed -e "s|%%DIR%%|${DIR}|" > ${fln_NL}
+  chmod u+x ${fln_JS}
+  cp ./${fln_NL} ${DIR}
+  cp ./${fln_JS} ${DIR}
+
+  ## Submitting a job
+  echo "*** submit job ${fln_JS} ***"
+  ./${fln_JS}
+
+  sleep 1
+  i=$(( $i + 1 ))
+
+done
