@@ -14,8 +14,8 @@ if [ $# -lt 2 ]; then
 fi
 
 #### Environment setting
-DIR=/data/group1/z43460z/gkvp/f0.58/ITGae-lin
-LDM=gkvp_mpifft.exe
+DIR=/data/group1/z43460z/gkvp/f0.60/ITGae-lin
+LDM=gkvp.exe
 NL=gkvp_namelist
 SC=pjsub
 JS=sub.q
