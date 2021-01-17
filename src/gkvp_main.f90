@@ -15,13 +15,13 @@ PROGRAM GKV_main
 !         |
 !        bndry, fft, fld, zfilter
 !         |
-!        clock, intgrl, tips, freq, igs, vmecbzx
+!        clock, intgrl, tips, freq, igs, vmecbzx, fileio
 !         |
 !        mpienv, math
 !         |
 !        header
 !
-!    Update history
+!    Update history of gkvp_main.f90
 !    --------------
 !      gkvp_f0.57 (S. Maeyama, Oct 2020)
 !        - Version number f0.57 is removed from filename.

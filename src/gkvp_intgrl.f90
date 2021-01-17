@@ -3,7 +3,7 @@ MODULE GKV_intgrl
 !
 !    Flux-surface and field-line averages, velocity-space integrals
 !
-!    Update history
+!    Update history of gkvp_intgrl.f90
 !    --------------
 !      gkvp_f0.57 (S. Maeyama, Oct 2020)
 !        - Version number f0.57 is removed from filename.

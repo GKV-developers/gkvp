@@ -11,7 +11,7 @@ MODULE GKV_igs
 !          are converted to SFL magnetic coordinates (Axisym/Boozer/Hamada) 
 !            by the interface code IGS developed by A. Matsuyama and M. Nakata. 
 !
-!    Update history
+!    Update history of gkvp_igs.f90
 !    --------------
 !      gkvp_f0.57 (S. Maeyama, Oct 2020)
 !        - Version number f0.57 is removed from filename.

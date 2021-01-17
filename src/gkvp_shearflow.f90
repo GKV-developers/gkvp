@@ -3,7 +3,7 @@ MODULE GKV_shearflow
 !
 !    Shearflow convection term  
 !
-!    Update history
+!    Update history of gkvp_shearflow.f90
 !    --------------
 !      gkvp_f0.57 (S. Maeyama, Oct 2020)
 !        - Version number f0.57 is removed from filename.

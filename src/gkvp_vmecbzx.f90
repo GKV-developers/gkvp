@@ -4,7 +4,7 @@ MODULE GKV_vmecbzx
 !    Calculate the magnetic field components and metric coefficients
 !      from the VMEC equilibrium by using BZX code. 
 !
-!    Update history
+!    Update history of gkvp_vmecbxz.f90
 !    --------------
 !      gkvp_f0.57 (S. Maeyama, Oct 2020)
 !        - Version number f0.57 is removed from filename.

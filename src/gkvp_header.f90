@@ -16,7 +16,7 @@ MODULE GKV_header
 !         mod( global_ny+1, nprocw ) = 0, due to w parallelization.
 !         nzb<=nz due to data copy in zfilter.
 !
-!    Update history
+!    Update history of gkvp_header.f90
 !    --------------
 !      gkvp_f0.57 (S. Maeyama, Oct 2020)
 !        - Version number f0.57 is removed from filename.
