@@ -1,11 +1,21 @@
-#### gfortran + Open-MPI ###
-FC = mpifort
-FFLAGS = -mcmodel=medium -m64 -march=native -mtune=native -O3 -ffast-math # Optimization
-#FFLAGS += -fopenmp # OpenMP
-#FFLAGS += -Wall -Wextra -pedantic -fbacktrace \
-#          -fbounds-check -Wuninitialized -ffpe-trap=invalid,zero,overflow # Debug
+### Fujitsu Fortran Compiler ###
+FC = mpifrtpx
+FFLAGS = -Kfast,parallel # Optimization
+FFLAGS += -X9 # Fortran95
+FFLAGS += -Koptmsg=2 -Nlst=t # Optimization report
+FFLAGS += -fw # Suppress message
+FFLAGS += -Kopenmp #-Nfjomplib # OpenMP
+FFLAGS += -mcmodel=large # Static memory larger than 2GB
+#FFLAGS += -Haefosux -NRtrap #-O0 # Debug
+OPTRPT = 'lst'
+#FFLAGS += -Nfjprof # Fujitsu profiler fapp
+FFLAGS += -Ksimd_nouse_multiple_structures # Specific option for compiler tcs1.2.26 to avoid slowing down GKV
+FFLAGS += -Knosch_pre_ra # Specific option for compiler tcs1.2.26 to avoid slowing down GKV
+
+### FFTW (module load fftw-tune)
 INC = 
-LIB = 
+LIB = -lm -lfftw3 -lm -SSL2
+
 
 
 PROG = 'gkvp_mpifft.exe'
@@ -14,28 +24,13 @@ SRC = ../src/
 MYL = ../lib/
 
 MATH = gkvp_math_portable
-
 FFT = gkvp_fft_fftw
-ifeq ($(FFT),gkvp_fft_fftw)
-  FFTW_DIR=`spack location -i fftw`
-  INC += -I$(FFTW_DIR)/include
-  LIB += -L$(FFTW_DIR)/lib -lfftw3 -lm
-endif
-
-#FILEIO=gkvp_fileio_fortran
-FILEIO=gkvp_fileio_netcdf
-ifeq ($(FILEIO),gkvp_fileio_netcdf)
-  NETCDF_DIR=`spack location -i netcdf-fortran`
-  INC += -I$(NETCDF_DIR)/include
-  LIB += -L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf -lhdf5_hl -lhdf5
-endif
 
 
 gkvp:	$(SRC)gkvp_header.f90\
 	$(SRC)gkvp_mpienv.f90\
 	$(MYL)$(MATH).f90\
 	$(SRC)gkvp_clock.f90\
-	$(SRC)$(FILEIO).f90\
 	$(SRC)gkvp_intgrl.f90\
 	$(SRC)gkvp_tips.f90\
 	$(SRC)gkvp_vmecbzx.f90\
@@ -60,7 +55,6 @@ gkvp:	$(SRC)gkvp_header.f90\
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_mpienv.f90
 	$(FC) $(FFLAGS) -c $(MYL)$(MATH).f90
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_clock.f90
-	$(FC) $(FFLAGS) -c $(SRC)$(FILEIO).f90 $(INC)
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_intgrl.f90
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_tips.f90
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_vmecbzx.f90
@@ -86,7 +80,6 @@ gkvp:	$(SRC)gkvp_header.f90\
 			gkvp_mpienv.o\
 			$(MATH).o\
 			gkvp_clock.o\
-			$(FILEIO).o\
 			gkvp_intgrl.o\
 			gkvp_tips.o\
 			gkvp_vmecbzx.o\
@@ -108,8 +101,7 @@ gkvp:	$(SRC)gkvp_header.f90\
                         gkvp_main.o\
 			-o $(PROG) $(LIB)
 
-#	cp *.o *.mod *.$(OPTRPT) ../src/
-	cp *.o *.mod ../src/
+	cp *.o *.mod *.$(OPTRPT) ../src/
 	rm -f *.o *.mod *.$(OPTRPT)
 
 clean:
