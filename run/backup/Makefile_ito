@@ -6,25 +6,39 @@ FFLAGS += -qopenmp # OpenMP
                           # LANG=ja_JP.UTF-8 may cause a problem. export LANG=C
 #FFLAGS += -warn all -g -traceback -fpe0 -check bounds -check uninit # Debug
 OPTRPT = 'optrpt'
-#INC =
-#LIB = -L${FFTW_DIR} -lfftw3 -lm
-INC =                 ### For MKL wrapper of FFTW
-LIB = -mkl=sequential ### For MKL wrapper of FFTW
+INC =
+LIB =
 
 
-PROG = 'gkvp_mpifft.exe'
+PROG = 'gkvp.exe'
 
 SRC = ../src/
 MYL = ../lib/
 
 MATH = gkvp_math_portable
+
 FFT = gkvp_fft_fftw
+### Usage of FFTW
+ifeq ($(FFT),gkvp_fft_fftw)
+  INC +=                 ### For MKL wrapper of FFTW
+  LIB += -mkl=sequential ### For MKL wrapper of FFTW
+endif
+
+FILEIO=gkvp_fileio_fortran
+#FILEIO=gkvp_fileio_netcdf
+### Usage of NetCDF (module load netcdf phdf5)
+### NetCDF does not work on the ITO supercomputer for now, Jan 18 2021
+ifeq ($(FILEIO),gkvp_fileio_netcdf)
+  INC += -I$(NCDIR)/include -I/home/app/a/HDF5-1.10.1/process/include
+  LIB += -L$(NCDIR)/lib  -L/home/app/a/HDF5-1.10.1/process/lib -lnetcdff -lnetcdf -lhdf5_hl -lhdf5
+endif
 
 
 gkvp:	$(SRC)gkvp_header.f90\
 	$(SRC)gkvp_mpienv.f90\
 	$(MYL)$(MATH).f90\
 	$(SRC)gkvp_clock.f90\
+	$(SRC)$(FILEIO).f90\
 	$(SRC)gkvp_intgrl.f90\
 	$(SRC)gkvp_tips.f90\
 	$(SRC)gkvp_vmecbzx.f90\
@@ -49,6 +63,7 @@ gkvp:	$(SRC)gkvp_header.f90\
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_mpienv.f90
 	$(FC) $(FFLAGS) -c $(MYL)$(MATH).f90
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_clock.f90
+	$(FC) $(FFLAGS) -c $(SRC)$(FILEIO).f90 $(INC)
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_intgrl.f90
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_tips.f90
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_vmecbzx.f90
@@ -74,6 +89,7 @@ gkvp:	$(SRC)gkvp_header.f90\
 			gkvp_mpienv.o\
 			$(MATH).o\
 			gkvp_clock.o\
+			$(FILEIO).o\
 			gkvp_intgrl.o\
 			gkvp_tips.o\
 			gkvp_vmecbzx.o\

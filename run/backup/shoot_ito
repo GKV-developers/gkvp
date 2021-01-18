@@ -14,8 +14,8 @@ if [ $# -lt 2 ]; then
 fi
 
 #### Environment setting
-DIR=`pwd`/data_test07
-LDM=gkvp_mpifft.exe
+DIR=`pwd`/data_SmallGridIO
+LDM=gkvp.exe
 NL=gkvp_namelist
 SC=pjsub
 JS=sub.q

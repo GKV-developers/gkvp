@@ -32,7 +32,7 @@ endif
 
 FILEIO=gkvp_fileio_fortran
 #FILEIO=gkvp_fileio_netcdf
-### Usage of FFTW (module load netcdf-fortran netcdf-c phdf5)
+### Usage of NetCDF (module load netcdf-fortran netcdf-c phdf5)
 ### NetCDF does not work on the FLOW supercomputer for now, Jan 17 2021
 ifeq ($(FILEIO),gkvp_fileio_netcdf)
   #INC += -I$(NETCDF_FORTRAN_DIR)/include -I$(NETCDF_DIR)/include -I$(PHDF5_DIR)/include
