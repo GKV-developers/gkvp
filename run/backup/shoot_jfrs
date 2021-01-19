@@ -14,8 +14,8 @@ if [ $# -lt 2 ]; then
 fi
 
 #### Environment setting
-DIR=/work/smaeyama/gkvp/f0.57/linfreq04_linfreq_adaptdt/
-LDM=gkvp_mpifft.exe
+DIR=/work/smaeyama/gkvp/f0.60/data_SmallGridIO
+LDM=gkvp.exe
 NL=gkvp_namelist
 SC=sbatch
 JS=sub.q

@@ -8,7 +8,7 @@ FFLAGS += -rm # Optimization report
 #FFLAGS += -g -R b -K trap=fp # Debug
 OPTRPT = 'lst'
 INC =
-LIB = -L${FFTW_DIR} -lfftw3 -lm
+LIB =
 
 
 #### Intel Fortran Compiler (module switch PrgEnv-cray PrgEnv-intel; module load cray-fftw) ###
@@ -25,19 +25,36 @@ LIB = -L${FFTW_DIR} -lfftw3 -lm
 ##LIB = -mkl=sequential ### For MKL wrapper of FFTW
 
 
-PROG = 'gkvp_mpifft.exe'
+PROG = 'gkvp.exe'
 
 SRC = ../src/
 MYL = ../lib/
 
 MATH = gkvp_math_portable
+
 FFT = gkvp_fft_fftw
+FFT = gkvp_fft_fftw
+### Usage of FFTW (module load cray-fftw)
+ifeq ($(FFT),gkvp_fft_fftw)
+  LIB += -I${FFTW_INC}
+  LIB += -L${FFTW_DIR} -lfftw3 -lm
+endif
+
+FILEIO=gkvp_fileio_fortran
+#FILEIO=gkvp_fileio_netcdf
+### Usage of NetCDF (module load cray-netcdf-hdf5parallel)
+### NetCDF does not work on the JFRS-1 supercomputer for now, Jan 19 2021
+ifeq ($(FILEIO),gkvp_fileio_netcdf)
+  INC += -I$(NETCDF_DIR)/include
+  LIB += -L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf -lhdf5_hl -lhdf5
+endif
 
 
 gkvp:	$(SRC)gkvp_header.f90\
 	$(SRC)gkvp_mpienv.f90\
 	$(MYL)$(MATH).f90\
 	$(SRC)gkvp_clock.f90\
+	$(SRC)$(FILEIO).f90\
 	$(SRC)gkvp_intgrl.f90\
 	$(SRC)gkvp_tips.f90\
 	$(SRC)gkvp_vmecbzx.f90\
@@ -63,6 +80,7 @@ gkvp:	$(SRC)gkvp_header.f90\
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_mpienv.f90
 	$(FC) $(FFLAGS) -c $(MYL)$(MATH).f90
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_clock.f90
+	$(FC) $(FFLAGS) -c $(SRC)$(FILEIO).f90 $(INC)
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_intgrl.f90
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_tips.f90
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_vmecbzx.f90
@@ -87,6 +105,7 @@ gkvp:	$(SRC)gkvp_header.f90\
 			gkvp_mpienv.o\
 			$(MATH).o\
 			gkvp_clock.o\
+			$(FILEIO).o\
 			gkvp_intgrl.o\
 			gkvp_tips.o\
 			gkvp_vmecbzx.o\

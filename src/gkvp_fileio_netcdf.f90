@@ -421,6 +421,69 @@ CONTAINS
   END SUBROUTINE fileio_close_trn
 
 
+!!--------------------------------------
+!  SUBROUTINE fileio_open_tri ( path, cmx, cmy, replace )
+!!--------------------------------------
+!
+!    character(*), intent(in) :: path
+!    character(*), intent(in) :: cmx, cmy
+!    logical, intent(in) :: replace
+!
+!    character(3)   :: cnew
+!
+!    integer :: ierr_nf90
+!    integer :: counter, i
+!    integer :: MPI_GROUP_WORLD, new_group, new_comm, ierr_mpi
+!    integer :: tri_tf(1)
+!    integer, allocatable :: rank_list(:), tri_tf_list(:)
+!
+!    allocate(rank_list(nproc))
+!    allocate(tri_tf_list(nproc))
+!
+!    if ( rank == 0 ) then
+!      tri_tf(1) = 1
+!    else
+!      tri_tf(1) = 0
+!    end if
+!
+!    call MPI_Allgather( tri_tf, 1, MPI_INTEGER, tri_tf_list, 1, MPI_INTEGER, &
+!                        MPI_COMM_WORLD, ierr_mpi)
+!
+!    counter = 1
+!    do i = 1, nproc
+!      if ( tri_tf_list(i) == 1 ) then
+!        rank_list(counter) = i-1
+!        counter = counter+1
+!      end if
+!    end do
+!
+!    call MPI_Comm_group( MPI_COMM_WORLD, MPI_GROUP_WORLD, ierr_mpi )
+!    call MPI_Group_incl( MPI_GROUP_WORLD, counter-1, rank_list, new_group, &
+!                         ierr_mpi )
+!    call MPI_Comm_create( MPI_COMM_WORLD, new_group, tri_comm, ierr_mpi )
+!
+!    write( cnew,  fmt="(i3.3)" ) inum
+!
+!    if ( rank == 0 ) then
+!      if ( replace ) then
+!        ierr_nf90=nf90_create( &
+!                path=path//"mx"//cmx//"my"//cmy//".tri."//cnew//".nc", &
+!                cmode=IOR(NF90_NETCDF4,NF90_MPIIO), ncid=otri_nc, &
+!                comm=tri_comm, info=MPI_INFO_NULL ) 
+!        call check_nf90err( ierr_nf90, "nf90_create" )
+!      else
+!        ierr_nf90=nf90_open( &
+!                path=path//"mx"//cmx//"my"//cmy//".tri."//cnew//".nc", &
+!                mode=NF90_WRITE, ncid=otri_nc, &
+!                comm=tri_comm, info=MPI_INFO_NULL ) 
+!        call check_nf90err( ierr_nf90, "nf90_open" )
+!      end if
+!    end if
+!
+!    deallocate(tri_tf_list, rank_list)
+!
+!  END SUBROUTINE fileio_open_tri
+
 !--------------------------------------
   SUBROUTINE fileio_open_tri ( path, cmx, cmy, replace )
 !--------------------------------------
@@ -437,50 +500,53 @@ CONTAINS
     integer :: tri_tf(1)
     integer, allocatable :: rank_list(:), tri_tf_list(:)
 
-    allocate(rank_list(nproc))
-    allocate(tri_tf_list(nproc))
-
-    if ( rank == 0 ) then
-      tri_tf(1) = 1
-    else
-      tri_tf(1) = 0
-    end if
-
-    call MPI_Allgather( tri_tf, 1, MPI_INTEGER, tri_tf_list, 1, MPI_INTEGER, &
-                        MPI_COMM_WORLD, ierr_mpi)
-
-    counter = 1
-    do i = 1, nproc
-      if ( tri_tf_list(i) == 1 ) then
-        rank_list(counter) = i-1
-        counter = counter+1
-      end if
-    end do
-
-    call MPI_Comm_group( MPI_COMM_WORLD, MPI_GROUP_WORLD, ierr_mpi )
-    call MPI_Group_incl( MPI_GROUP_WORLD, counter-1, rank_list, new_group, &
-                         ierr_mpi )
-    call MPI_Comm_create( MPI_COMM_WORLD, new_group, tri_comm, ierr_mpi )
-
     write( cnew,  fmt="(i3.3)" ) inum
 
-    if ( rank == 0 ) then
-      if ( replace ) then
+    if ( replace ) then ! Initial creation of NetCDF files
+
+      allocate(rank_list(nproc))
+      allocate(tri_tf_list(nproc))
+
+      if ( rank == 0 ) then
+        tri_tf(1) = 1
+      else
+        tri_tf(1) = 0
+      end if
+      call MPI_Allgather( tri_tf, 1, MPI_INTEGER, tri_tf_list, 1, MPI_INTEGER, &
+                          MPI_COMM_WORLD, ierr_mpi)
+      counter = 1
+      do i = 1, nproc
+        if ( tri_tf_list(i) == 1 ) then
+          rank_list(counter) = i-1
+          counter = counter+1
+        end if
+      end do
+      call MPI_Comm_group( MPI_COMM_WORLD, MPI_GROUP_WORLD, ierr_mpi )
+      call MPI_Group_incl( MPI_GROUP_WORLD, counter-1, rank_list, new_group, &
+                           ierr_mpi )
+      call MPI_Comm_create( MPI_COMM_WORLD, new_group, tri_comm, ierr_mpi )
+
+      if ( rank == 0 ) then
         ierr_nf90=nf90_create( &
                 path=path//"mx"//cmx//"my"//cmy//".tri."//cnew//".nc", &
                 cmode=IOR(NF90_NETCDF4,NF90_MPIIO), ncid=otri_nc, &
-                comm=tri_comm, info=MPI_INFO_NULL ) 
+                comm=tri_comm, info=MPI_INFO_NULL )
         call check_nf90err( ierr_nf90, "nf90_create" )
-      else
+      end if
+
+      deallocate(tri_tf_list, rank_list)
+
+    else ! For appending data to NetCDF files
+
+      if ( rank == 0 ) then
         ierr_nf90=nf90_open( &
                 path=path//"mx"//cmx//"my"//cmy//".tri."//cnew//".nc", &
                 mode=NF90_WRITE, ncid=otri_nc, &
-                comm=tri_comm, info=MPI_INFO_NULL ) 
+                comm=tri_comm, info=MPI_INFO_NULL )
         call check_nf90err( ierr_nf90, "nf90_open" )
       end if
-    end if
 
-    deallocate(tri_tf_list, rank_list)
+    end if
 
   END SUBROUTINE fileio_open_tri
 
