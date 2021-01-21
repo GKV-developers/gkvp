@@ -33,7 +33,6 @@ MYL = ../lib/
 MATH = gkvp_math_portable
 
 FFT = gkvp_fft_fftw
-FFT = gkvp_fft_fftw
 ### Usage of FFTW (module load cray-fftw)
 ifeq ($(FFT),gkvp_fft_fftw)
   LIB += -I${FFTW_INC}

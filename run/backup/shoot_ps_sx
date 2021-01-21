@@ -14,7 +14,7 @@ if [ $# -lt 2 ]; then
 fi
 
 #### Environment setting
-DIR=/data/lng/maeyama/gkvp/f0.58/test01
+DIR=/data/lng/maeyama/gkvp/f0.60/data_SmallGridIO
 LDM=gkvp.exe
 NL=gkvp_namelist
 SC=qsub
