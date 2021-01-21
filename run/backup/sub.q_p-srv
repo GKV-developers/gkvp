@@ -28,7 +28,7 @@
 #
 ################################################################################
 
-#PBS -l nodes=1:ppn=20
+#PBS -l nodes=2:ppn=20
 #PBS -l mem=512gb
 #PBS -l walltime=00:06:00
 
@@ -41,14 +41,19 @@ export KMP_STACKSIZE=6G   # OpenMP stack memory size (per thread)
 
 ### Working directory 
 DIR=%%DIR%%
-LDM=gkvp_mpifft.exe
+LDM=gkvp.exe
 NL=gkvp_namelist.%%%
+
+
+#export INCLUDE=/home/pken/include:$INCLUDE
+#export LIBRARY_PATH=/home/pken/lib:$LIBRARY_PATH
+export LD_LIBRARY_PATH=/home/pken/lib:$LD_LIBRARY_PATH
 
 
 date
 cd ${DIR}
 export fu05=${DIR}/${NL}
-mpirun -n 16 -npernode 16 ${DIR}/${LDM}
+mpirun -n 32 -npernode 16 ${DIR}/${LDM}
   # -n        "Total number of MPI processes"
   # -npernode "Number of MPI processes per node"
 date
