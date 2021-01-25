@@ -35,17 +35,20 @@ MATH = gkvp_math_portable
 FFT = gkvp_fft_fftw
 ### Usage of FFTW (module load cray-fftw)
 ifeq ($(FFT),gkvp_fft_fftw)
-  LIB += -I${FFTW_INC}
+  INC += -I${FFTW_INC}
   LIB += -L${FFTW_DIR} -lfftw3 -lm
 endif
 
 FILEIO=gkvp_fileio_fortran
 #FILEIO=gkvp_fileio_netcdf
-### Usage of NetCDF (module load cray-netcdf-hdf5parallel)
-### NetCDF does not work on the JFRS-1 supercomputer for now, Jan 19 2021
+### Usage of NetCDF (module load cray-hdf5-parallel/1.10.5.1 cray-netcdf-hdf5parallel/4.6.3.1)
+###     To check details of moudule: module show cray-netcdf-hdf5parallel/4.6.3.1
+###     To check version of NetCDF-C: nc-config --version
+###     To check version of NetCDF-Fortran: nf-config --version
 ifeq ($(FILEIO),gkvp_fileio_netcdf)
-  INC += -I$(NETCDF_DIR)/include
-  LIB += -L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf -lhdf5_hl -lhdf5
+  INC += -I$(NETCDF_DIR)/include -I$(HDF5_DIR)/include
+  LIB += -L$(NETCDF_DIR)/lib -L$(HDF5_DIR)/lib -lnetcdff -lnetcdf -lhdf5_hl -lhdf5
+  #LIB += -lnetcdff -lnetcdf -lhdf5_hl_parallel -lhdf5_parallel
 endif
 
 
