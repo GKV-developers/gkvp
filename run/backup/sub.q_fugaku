@@ -39,9 +39,9 @@
 
 #PJM --rsc-list "rscunit=rscunit_ft01"
 #PJM --rsc-list "rscgrp=eap-small"  # Job class     
-#PJM --rsc-list "node=32"         # Number of nodes
+#PJM --rsc-list "node=8"          # Number of nodes
 #PJM --rsc-list "elapse=02:10:00" # Execute time
-#PJM --mpi "proc=128"              # Number of MPI (= Number of nodes x 4)
+#PJM --mpi "proc=32"              # Number of MPI (= Number of nodes x 4)
 #### --mpi "rank-map-bynode"
 #### --mpi "rank-map-hostfile=rankmapfile.dat"
 #PJM -j                           # Write error in standard output file
@@ -62,10 +62,10 @@ echo " OpenMP threads per MPI: ${OMP_NUM_THREADS}"
 
 ### Working directory 
 DIR=%%DIR%%
-LDM=gkvp_mpifft.exe
+LDM=gkvp.exe
 NL=gkvp_namelist.%%%
 
-export XOS_MMM_L_PAGING_POLICY=demand:demand:demand # For Largepage
+#export XOS_MMM_L_PAGING_POLICY=demand:demand:demand # For Largepage
 
 export PLE_MPI_STD_EMPTYFILE="off" # Suppress stdout of filesize-0
 
