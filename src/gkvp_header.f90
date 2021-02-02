@@ -36,9 +36,9 @@ MODULE GKV_header
 !  in  x, y,z,v,m (0:2*nxw-1,  0:2*nyw-1,-global_nz:global_nz-1,1:2*global_nv,0:global_nm)
 !  in kx,ky,z,v,m (   -nx:nx,0:global_ny,-global_nz:global_nz-1,1:2*global_nv,0:global_nm)
 
-  integer, parameter :: nxw = 10, nyw = 10
-  integer, parameter :: nx = 6, global_ny = 6 ! 2/3 de-aliasing rule
-  integer, parameter :: global_nz = 8, global_nv = 12, global_nm = 7
+  integer, parameter :: nxw = 2, nyw = 20
+  integer, parameter :: nx = 0, global_ny = 12 ! 2/3 de-aliasing rule
+  integer, parameter :: global_nz = 48, global_nv = 24, global_nm = 15
 
   integer, parameter :: nzb = 2, &  ! the number of ghost grids in z
                         nvb = 2     ! the number of ghost grids in v and m
@@ -47,7 +47,7 @@ MODULE GKV_header
 !  Data distribution for MPI
 !--------------------------------------
 
-  integer, parameter :: nprocw = 2, nprocz = 2, nprocv = 2, nprocm = 2, nprocs = 2
+  integer, parameter :: nprocw = 2, nprocz = 4, nprocv = 2, nprocm = 2, nprocs = 1
 
 !--------------------------------------
 !  Parameters for variable sizes

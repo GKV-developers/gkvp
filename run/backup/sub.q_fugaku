@@ -58,6 +58,9 @@ echo "         Cores per node: ${NUM_CORES}"
 echo "          MPI Processes: ${NUM_PROCS}"
 echo " OpenMP threads per MPI: ${OMP_NUM_THREADS}"
 
+### Usage of NetCDF
+. /home/apps/oss/spack/share/spack/setup-env.sh
+spack load netcdf-fortran%fj
 
 
 ### Working directory 
