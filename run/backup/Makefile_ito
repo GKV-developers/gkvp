@@ -26,11 +26,10 @@ endif
 
 FILEIO=gkvp_fileio_fortran
 #FILEIO=gkvp_fileio_netcdf
-### Usage of NetCDF (module load netcdf phdf5)
-### NetCDF does not work on the ITO supercomputer for now, Jan 18 2021
+### Usage of NetCDF (module load netcdf)
 ifeq ($(FILEIO),gkvp_fileio_netcdf)
-  INC += -I$(NCDIR)/include -I/home/app/a/HDF5-1.10.1/process/include
-  LIB += -L$(NCDIR)/lib  -L/home/app/a/HDF5-1.10.1/process/lib -lnetcdff -lnetcdf -lhdf5_hl -lhdf5
+  INC += -I$(NCDIR)/include
+  LIB += -L$(NCDIR)/lib -lnetcdff
 endif
 
 

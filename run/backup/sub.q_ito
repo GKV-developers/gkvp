@@ -46,7 +46,7 @@
 #PJM -j                     # Write error in standard output file
 #PJM -s                     # Job statistics
 
-module load intel
+module load intel netcdf
 
 NUM_NODES=$PJM_VNODES       # Number of nodes
 NUM_CORES=36                # Number of cores per node
