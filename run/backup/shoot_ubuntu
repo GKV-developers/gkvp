@@ -12,12 +12,16 @@ if [ $# -lt 2 ]; then
   echo "HOW TO USE: ./shoot [START_NUMBER] [END_NUMBER] ([JOB-ID])"
   exit
 fi
+if [ -n "$3" ]; then
+  echo "[JOB-ID] is not supported on Mac."
+  exit
+fi
 
 #### Environment setting
-DIR=/data/group1/z43460z/gkvp/f0.60/ITGae-lin
+DIR=`pwd`/data_SmallGridIO
 LDM=gkvp.exe
 NL=gkvp_namelist
-SC=pjsub
+#SC=pjsub
 JS=sub.q
 ### For VMEC, set VMCDIR including metric_boozer.bin.dat
 #VMCDIR=./input_vmec/vmec_sample_nss501ntheta1024nzeta0
@@ -72,17 +76,8 @@ do
   cp ./${fln_JS} ${DIR}
 
   ## Submitting a job
-  #echo "*** submit job ${fln_JS} ***"
-  #${SC} ${fln_JS}
-  if [ -z "$j"  -a  $i -eq $1 ]; then
-    echo "*** submit first step job ${fln_JS} ***"
-    ${SC} --step --sparam "sn=$i" ${fln_JS} | tee shoottempfile
-    j=`awk '{sub("_.*",""); print $6}' shoottempfile`
-    rm shoottempfile
-  else
-    echo "*** submit sequential step job ${fln_JS} ***"
-    ${SC} --step --sparam "jid=$j,sd=ec!=0:all" ${fln_JS}
-  fi
+  echo "*** submit job ${fln_JS} ***"
+  ./${fln_JS}
 
   sleep 1
   i=$(( $i + 1 ))

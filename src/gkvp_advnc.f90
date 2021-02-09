@@ -3,7 +3,7 @@ MODULE GKV_advnc
 !
 !    Calculate df/dt and time advance by Runge-Kutta-Gill method
 !
-!    Update history
+!    Update history of gkvp_advnc.f90
 !    --------------
 !      gkvp_f0.57 (S. Maeyama, Oct 2020)
 !        - Version number f0.57 is removed from filename.

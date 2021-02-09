@@ -67,7 +67,7 @@ srun assign -U on g:sf
 
 ### Working directory 
 DIR=%%DIR%%
-LDM=gkvp_mpifft.exe
+LDM=gkvp.exe
 NL=gkvp_namelist.%%%
 
 

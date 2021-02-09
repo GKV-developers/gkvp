@@ -3,7 +3,7 @@ MODULE GKV_fld
 !
 !    Field solver
 !
-!    Update history
+!    Update history of gkvp_fld.f90
 !    --------------
 !      gkvp_f0.57 (S. Maeyama, Oct 2020)
 !        - Version number f0.57 is removed from filename.

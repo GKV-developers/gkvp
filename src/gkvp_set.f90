@@ -3,8 +3,10 @@ MODULE GKV_set
 !
 !    Set file I/O, and read parameters from namelist
 !
-!    Update history
+!    Update history of gkvp_set.f90
 !    --------------
+!      gkvp_f0.60 (S. Maeyama, Jan 2021)
+!        - Use fileio module to switch Fortran/NetCDF binary output.
 !      gkvp_f0.58 (S. Maeyama, Oct 2020)
 !        - init_random is added to switch random number for initialization.
 !      gkvp_f0.57 (S. Maeyama, Oct 2020)
@@ -31,6 +33,9 @@ MODULE GKV_set
   use GKV_colli,  only: colli_set_param
   use GKV_colliimp,  only: colliimp_set_param
   use GKV_tips,   only: tips_reality
+  !fj start 202010
+  use GKV_fileio
+  !fj end 202010
 
   implicit none
 
@@ -108,7 +113,7 @@ CONTAINS
 
 
       call getenv ( 'fu05',env_string )  !fj
-      open(inml, file=env_string )          !fj
+      open(inml, file=env_string )       !fj
 
 
       call date_and_time( cdate, ctime )
@@ -137,25 +142,42 @@ CONTAINS
       open( olog, file=trim(f_log)//crank//"."//srank//".log."//cnew )
 
       if ( inum > 1 ) then
-        open( icnt, file=trim(f_cnt)//crank//".cnt."//cold, &
-              form="unformatted", status="old", action="read" )
+        !fj start 202010
+        !open( icnt, file=trim(f_cnt)//crank//".cnt."//cold, &
+        !      form="unformatted", status="old", action="read" )
+        call fileio_open_icnt( trim(f_cnt) )
+        !fj end 202010
       end if
 
-      open( ofxv, file=trim(f_fxv)//crank//"."//srank//".fxv."//cnew, form="unformatted" )
-      open( ocnt, file=trim(f_cnt)//crank//".cnt."//cnew, form="unformatted" )
+      !fj start 202010
+      !open( ofxv, file=trim(f_fxv)//crank//"."//srank//".fxv."//cnew, form="unformatted" )
+      !open( ocnt, file=trim(f_cnt)//crank//".cnt."//cnew, form="unformatted" )
+      call fileio_open_fxv( trim(f_fxv) )
+      call fileio_open_cnt( trim(f_cnt) )
+      !fj end 202010
 
-      if ( vel_rank == 0 ) then
-        open( omom, file=trim(f_phi)//crank//"."//srank//".mom."//cnew, form="unformatted" )
-      end if
+      !fj start 202011
+      !if ( vel_rank == 0 ) then
+      !  open( omom, file=trim(f_phi)//crank//"."//srank//".mom."//cnew, form="unformatted" )
+      !end if
+      call fileio_open_mom( trim(f_phi) )
+      !fj end 202011
 
-      if ( ranks == 0 .AND. vel_rank == 0 ) then
-        open( ophi, file=trim(f_phi)//crank//"."//srank//".phi."//cnew, form="unformatted" )
-        open(  oAl, file=trim(f_phi)//crank//"."//srank//".Al."//cnew, form="unformatted" )
-      end if
+      !fj start 202011
+      !if ( ranks == 0 .AND. vel_rank == 0 ) then
+      !  open( ophi, file=trim(f_phi)//crank//"."//srank//".phi."//cnew, form="unformatted" )
+      !  open(  oAl, file=trim(f_phi)//crank//"."//srank//".Al."//cnew, form="unformatted" )
+      !end if
+      call fileio_open_phi( trim(f_phi) )
+      call fileio_open_Al( trim(f_phi) )
+      !fj end 202011
 
-      if ( zsp_rank == 0 .AND. vel_rank == 0 ) then
-        open( otrn, file=trim(f_phi)//crank//"."//srank//".trn."//cnew, form="unformatted" )
-      end if
+      !fj start 202011
+      !if ( zsp_rank == 0 .AND. vel_rank == 0 ) then
+      !  open( otrn, file=trim(f_phi)//crank//"."//srank//".trn."//cnew, form="unformatted" )
+      !end if
+      call fileio_open_trn( trim(f_phi) )
+      !fj end 202011
 
       if( rankg == 0 ) then
         open( omtr, file=trim(f_hst)//"mtr."//cnew )
@@ -211,22 +233,37 @@ CONTAINS
 
      close( olog )
 
-     close( icnt )
-     close( ofxv )
-     close( ocnt )
+     !fj start 202010
+     !close( icnt )
+     !close( ofxv )
+     !close( ocnt )
+     call fileio_close_icnt
+     call fileio_close_fxv
+     call fileio_close_cnt
+     !fj end 202010
 
-     if ( vel_rank == 0 ) then
-       close( omom )
-     end if
+     !fj start 202011
+     !if ( vel_rank == 0 ) then
+     !  close( omom )
+     !end if
+     call fileio_close_mom
+     !fj end 202011
 
-     if ( ranks == 0 .AND. vel_rank == 0 ) then
-       close( ophi )
-       close( oAl  )
-     end if
+     !fj start 202011
+     !if ( ranks == 0 .AND. vel_rank == 0 ) then
+     !  close( ophi )
+     !  close( oAl  )
+     !end if
+     call fileio_close_phi
+     call fileio_close_Al
+     !fj end 202011
 
-     if ( zsp_rank == 0 .AND. vel_rank == 0 ) then
-       close( otrn )
-     end if
+     !fj start 202011
+     !if ( zsp_rank == 0 .AND. vel_rank == 0 ) then
+       !close( otrn )
+     !end if
+     call fileio_close_trn
+     !fj end 202011
 
      if( rankg == 0 ) then
        close( omtr )
@@ -1877,7 +1914,10 @@ CONTAINS
         time   = - 1._DP
 
         do 
-          read( unit=icnt, iostat=input_status ) time, wf
+          !fj start 202010
+          !read( unit=icnt, iostat=input_status ) time, wf
+          call fileio_read_cnt( wf, time, input_status )
+          !fj end 202010
 
           if ( input_status < 0 ) then
             write( olog, * ) &
@@ -2000,11 +2040,16 @@ CONTAINS
             + nprocw0*nprocz*nprocv*rankm + nprocw0*nprocz*nprocv*nprocm*ranks
         write( srank, fmt="(i1.1)" ) ranks
 
-        open( icnt, file=trim(f_cnt)//crank//".cnt.000", &
-              form="unformatted", status="old", action="read" )
-        read( unit=icnt, iostat=input_status ) time, wf
-        rewind( icnt )
-        close( icnt )
+        !fj start 202010
+        !open( icnt, file=trim(f_cnt)//crank//".cnt.000", &
+        !      form="unformatted", status="old", action="read" )
+        !read( unit=icnt, iostat=input_status ) time, wf
+        !rewind( icnt )
+        !close( icnt )
+        call fileio_open_icnt( trim(f_cnt) )
+        call fileio_read_cnt( wf, time, input_status )
+        call fileio_close_icnt
+        !fj end 202010
 
         if ( ist_y_g <= iend_y_g0 * yfold .and. ist_y_g0 * yfold <= iend_y_g ) then
           do im = 0, nm

@@ -3,7 +3,7 @@ MODULE GKV_colli
 !
 !    Collision term
 !
-!    Update history
+!    Update history of gkvp_colli.f90
 !    --------------
 !      gkvp_f0.57 (S. Maeyama, Oct 2020)
 !        - Version number f0.57 is removed from filename.

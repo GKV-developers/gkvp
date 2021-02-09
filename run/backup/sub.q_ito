@@ -39,19 +39,19 @@
 ##############
 
 #PJM -L "rscunit=ito-a"     # ITO, sub-system A
-#PJM -L "rscgrp=ito-m-dbg"  # Job class
-#PJM -L "vnode=16"          # Number of nodes
+#PJM -L "rscgrp=ito-s-dbg"  # Job class
+#PJM -L "vnode=4"           # Number of nodes
 #PJM -L "vnode-core=36"     # Number of cores per node
 #PJM -L "elapse=00:15:00"   # Execute time
 #PJM -j                     # Write error in standard output file
 #PJM -s                     # Job statistics
 
-module load intel
+module load intel netcdf
 
 NUM_NODES=$PJM_VNODES       # Number of nodes
 NUM_CORES=36                # Number of cores per node
-NUM_PROCS=96                # MPI processes
-NUM_THREADS=6               # OpenMP threads per MPI
+NUM_PROCS=32                # MPI processes
+NUM_THREADS=4               # OpenMP threads per MPI
 ### NOTE: ${NUM_NODES}*${NUM_CORES}=${NUM_PROCS}*${NUM_THREADS} is recommended.
 
 export I_MPI_PERHOST=`expr $NUM_CORES / $NUM_THREADS`
@@ -76,7 +76,7 @@ echo " OpenMP threads per MPI: ${NUM_THREADS}"
 
 ### Working directory 
 DIR=%%DIR%%
-LDM=gkvp_mpifft.exe
+LDM=gkvp.exe
 NL=gkvp_namelist.%%%
 
 

@@ -35,20 +35,20 @@
 ###      Show disk usage     : "lsquota"
 ##############
 
-#PBS -q small24VH                 # queue name
+#PBS -q small                     # queue name
 #PBS --group=20234                # resource group
 #PBS -T necmpi                    # necessary for MPI job
-#PBS -l elapstim_req=01:15:00     # elapsed time limit
+#PBS -l elapstim_req=00:15:00     # elapsed time limit
 
 #---#PBS -l coresz_prc=10
 #---#PBS --venum-lhost=8
 #---#PBS -b 4                     # number of nodes
 
-#PBS --venode=8                   # total number of VE
+#PBS --venode=4                   # total number of VE
 #PBS --venum-lhost=8              # number of VE per a logical node
 #PBS -v OMP_NUM_THREADS=1         # number of threads per MPI process
 
-MPI_procs=64                      # number of MPI processes (= venode*8 for flat MPI)
+MPI_procs=32                      # number of MPI processes (= venode*8 for flat MPI)
 
 #PBS -v VE_FORT_SETBUF=10240
 #PBS -v FTRACE=YES
@@ -59,6 +59,8 @@ MPI_procs=64                      # number of MPI processes (= venode*8 for flat
 
 module load NECNLC-sx
 # module load NECNLC-mpi-sx
+### For NetCDF
+#module load netcdf-parallelIO-fortran-sx/4.5.2
 
 
 ### Working directory 

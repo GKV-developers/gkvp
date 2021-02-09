@@ -3,8 +3,10 @@ MODULE GKV_trans
 !
 !    Entropy transfer diagnostics
 !
-!    Update history
+!    Update history of gkvp_trans.f90
 !    --------------
+!      gkvp_f0.60 (S. Maeyama, Jan 2021)
+!        - Use fileio module to switch Fortran/NetCDF binary output.
 !      gkvp_f0.57 (S. Maeyama, Oct 2020)
 !        - Version number f0.57 is removed from filename.
 !
@@ -15,6 +17,9 @@ MODULE GKV_trans
   use GKV_intgrl, only: intgrl_thet, intgrl_v0_moment
   use GKV_clock, only: clock_sta, clock_end
   use GKV_exb, only: exb_NL_term
+  !fj start 202010
+  use GKV_fileio
+  !fj end 202010
 
   implicit none
 
@@ -230,15 +235,23 @@ CONTAINS
           triad_diag_mxt(it) = mxt
           triad_diag_myt(it) = myt
 
-          if ( rank == 0 ) then
-            write( srank, fmt="(i1.1)" ) ranks
-            write( cnew,  fmt="(i3.3)" ) inum
-            write( cmx,   fmt="(i4.4)" ) triad_diag_mxt(it)
-            write( cmy,   fmt="(i4.4)" ) triad_diag_myt(it)
-            open( otri, file=trim(f_phi)//"s"//srank//"mx"//cmx//"my"//cmy//".tri."//cnew, & 
-                        form="unformatted", status="replace" )
-            close( otri )
-          end if
+          !fj start 202011
+          !if ( rank == 0 ) then
+          !  write( srank, fmt="(i1.1)" ) ranks
+          !  write( cnew,  fmt="(i3.3)" ) inum
+          !  write( cmx,   fmt="(i4.4)" ) triad_diag_mxt(it)
+          !  write( cmy,   fmt="(i4.4)" ) triad_diag_myt(it)
+          !  open( otri, file=trim(f_phi)//"s"//srank//"mx"//cmx//"my"//cmy//".tri."//cnew, & 
+          !              form="unformatted", status="replace" )
+          !  close( otri )
+          !end if
+          write( srank, fmt="(i1.1)" ) ranks
+          write( cnew,  fmt="(i3.3)" ) inum
+          write( cmx,   fmt="(i4.4)" ) triad_diag_mxt(it)
+          write( cmy,   fmt="(i4.4)" ) triad_diag_myt(it)
+          call fileio_open_tri( trim(f_phi), cmx, cmy, .true. )
+          call fileio_close_tri
+          !fj end 202011
 
         end do
 
@@ -382,16 +395,25 @@ CONTAINS
                                                     jkpq_em, jpqk_em, jqkp_em)
 
         !%%% Output %%%
-        if ( rank == 0 ) then
-          write( srank, fmt="(i1.1)" ) ranks
-          write( cnew,  fmt="(i3.3)" ) inum
-          write( cmx,   fmt="(i4.4)" ) triad_diag_mxt(it)
-          write( cmy,   fmt="(i4.4)" ) triad_diag_myt(it)
-          open( otri, file=trim(f_phi)//"s"//srank//"mx"//cmx//"my"//cmy//".tri."//cnew, & 
-                      form="unformatted", status="unknown", position="append" )
-          write( unit=otri ) time, jkpq_es, jpqk_es, jqkp_es, jkpq_em, jpqk_em, jqkp_em
-          close( otri )
-        end if
+        !fj start 202011
+        !if ( rank == 0 ) then
+        !  write( srank, fmt="(i1.1)" ) ranks
+        !  write( cnew,  fmt="(i3.3)" ) inum
+        !  write( cmx,   fmt="(i4.4)" ) triad_diag_mxt(it)
+        !  write( cmy,   fmt="(i4.4)" ) triad_diag_myt(it)
+        !  open( otri, file=trim(f_phi)//"s"//srank//"mx"//cmx//"my"//cmy//".tri."//cnew, & 
+        !              form="unformatted", status="unknown", position="append" )
+        !  write( unit=otri ) time, jkpq_es, jpqk_es, jqkp_es, jkpq_em, jpqk_em, jqkp_em
+        !  close( otri )
+        !end if
+        write( srank, fmt="(i1.1)" ) ranks
+        write( cnew,  fmt="(i3.3)" ) inum
+        write( cmx,   fmt="(i4.4)" ) triad_diag_mxt(it)
+        write( cmy,   fmt="(i4.4)" ) triad_diag_myt(it)
+        call fileio_open_tri( trim(f_phi), cmx, cmy, .false. )
+        call fileio_write_tri( jkpq_es, jpqk_es, jqkp_es, jkpq_em, jpqk_em, jqkp_em, time )
+        call fileio_close_tri
+        !fj end 202011
 
       end do
 

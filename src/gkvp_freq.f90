@@ -4,7 +4,7 @@ MODULE GKV_freq
 !    Module for evaluating linear growth rate and real frequency
 !    (without shearflows)
 !
-!    Update history
+!    Update history of gkvp_freq.f90
 !    --------------
 !      gkvp_f0.57 (S. Maeyama, Oct 2020)
 !        - Version number f0.57 is removed from filename.

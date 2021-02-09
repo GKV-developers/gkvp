@@ -1,28 +1,11 @@
-### Cray Fortran Compiler (module load cray-fftw) ###
-FC = ftn 
-FFLAGS = -O3 -hfp3 -eF # Optimization
-FFLAGS += -homp # OpenMP
-FFLAGS += -rm # Optimization report
-#FFLAGS += -dynamic -hpic -Wl,--no-relax # Static Memory larger than 2GB
-#FFLAGS += -craype-verbose -h display_opt
-#FFLAGS += -g -R b -K trap=fp # Debug
-OPTRPT = 'lst'
-INC =
-LIB =
-
-
-#### Intel Fortran Compiler (module switch PrgEnv-cray PrgEnv-intel; module load cray-fftw) ###
-#FC = ftn 
-#FFLAGS = -shared-intel -O3 -Ofast -fp-model fast=2 -ipo # Optimization
-#FFLAGS += -qopenmp # OpenMP
-#FFLAGS += -qopt-report=3 # Optimization report
-##FFLAGS += -dynamic -fpic -mcmodel=medium # Static Memory larger than 2GB
-##FFLAGS += -warn all -g -traceback -fpe0 -check bounds -check uninit # Debug
-#OPTRPT = 'optrpt'
-#INC =
-#LIB = -L${FFTW_DIR} -lfftw3 -lm
-##INC = -I/opt/intel/mkl/include/fftw/ ### For MKL wrapper of FFTW
-##LIB = -mkl=sequential ### For MKL wrapper of FFTW
+#### gfortran + Open-MPI ###
+FC = mpifort
+FFLAGS = -mcmodel=medium -m64 -march=native -mtune=native -O3 -ffast-math # Optimization
+#FFLAGS += -fopenmp # OpenMP
+#FFLAGS += -Wall -Wextra -pedantic -fbacktrace \
+#          -fbounds-check -Wuninitialized -ffpe-trap=invalid,zero,overflow # Debug
+#INC = -I/usr/include
+#LIB = -L/usr/lib
 
 
 PROG = 'gkvp.exe'
@@ -33,22 +16,18 @@ MYL = ../lib/
 MATH = gkvp_math_portable
 
 FFT = gkvp_fft_fftw
-### Usage of FFTW (module load cray-fftw)
 ifeq ($(FFT),gkvp_fft_fftw)
-  INC += -I${FFTW_INC}
-  LIB += -L${FFTW_DIR} -lfftw3 -lm
+  FFTW_DIR=`spack location -i fftw`
+  INC += -I$(FFTW_DIR)/include
+  LIB += -L$(FFTW_DIR)/lib -lfftw3 -lm
 endif
 
 FILEIO=gkvp_fileio_fortran
 #FILEIO=gkvp_fileio_netcdf
-### Usage of NetCDF (module load cray-hdf5-parallel/1.10.5.1 cray-netcdf-hdf5parallel/4.6.3.1)
-###     To check details of moudule: module show cray-netcdf-hdf5parallel/4.6.3.1
-###     To check version of NetCDF-C: nc-config --version
-###     To check version of NetCDF-Fortran: nf-config --version
 ifeq ($(FILEIO),gkvp_fileio_netcdf)
-  INC += -I$(NETCDF_DIR)/include -I$(HDF5_DIR)/include
-  LIB += -L$(NETCDF_DIR)/lib -L$(HDF5_DIR)/lib -lnetcdff -lnetcdf -lhdf5_hl -lhdf5
-  #LIB += -lnetcdff -lnetcdf -lhdf5_hl_parallel -lhdf5_parallel
+  NETCDF_DIR=`spack location -i netcdf-fortran`
+  INC += -I$(NETCDF_DIR)/include
+  LIB += -L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf -lhdf5_hl -lhdf5
 endif
 
 
@@ -77,7 +56,6 @@ gkvp:	$(SRC)gkvp_header.f90\
 	$(SRC)gkvp_set.f90\
 	$(SRC)gkvp_main.f90
 
-
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_header.f90
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_mpienv.f90
 	$(FC) $(FFLAGS) -c $(MYL)$(MATH).f90
@@ -103,7 +81,8 @@ gkvp:	$(SRC)gkvp_header.f90\
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_set.f90
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_main.f90
 
-	$(FC) $(FFLAGS)	gkvp_header.o\
+	$(FC) $(FFLAGS)	\
+			gkvp_header.o\
 			gkvp_mpienv.o\
 			$(MATH).o\
 			gkvp_clock.o\
@@ -129,14 +108,14 @@ gkvp:	$(SRC)gkvp_header.f90\
                         gkvp_main.o\
 			-o $(PROG) $(LIB)
 
-
-	cp -p *.o *.mod *.$(OPTRPT) ../src/
+#	cp *.o *.mod *.$(OPTRPT) ../src/
+	cp *.o *.mod ../src/
 	rm -f *.o *.mod *.$(OPTRPT)
 
 clean:
-	rm -f ../src/*.o ../src/*.mod ../src/*.$(OPTRPT) ./*.exe ./sub.q.* \
-	      ./*.o ./*.mod ./*.$(OPTRPT) ./*namelist.* ./*.out ./*.err ./*.exe+orig
+	rm -f ../src/*.o ../src/*.mod ../src/*.$(OPTRPT) ./*.exe ./sub.q.*.o* \
+	      ./*.o ./*.mod ./*.$(OPTRPT) ./*namelist.* ./sub.q.*
 
 clear:
-	rm -f ./*.o ./*.mod ./*.$(OPTRPT) ./*namelist.* ./*.out ./*.err
+	rm -f ./*.o ./*.mod ./*.$(OPTRPT) ./*namelist.* ./sub.q.*
  

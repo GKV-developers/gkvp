@@ -7,8 +7,8 @@
 
 
 #### Environment setting
-set DIR=`pwd`/data
-set LDM=gkvp_mpifft.exe
+set DIR=`pwd`/data_SmallGridIO
+set LDM=gkvp.exe
 set NL=gkvp_namelist
 set SC=qsub
 set JS=sub.q

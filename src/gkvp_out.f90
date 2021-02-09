@@ -3,8 +3,10 @@ MODULE GKV_out
 !
 !    Data writing
 !
-!    Update history
+!    Update history of gkvp_out.f90
 !    --------------
+!      gkvp_f0.60 (S. Maeyama, Jan 2021)
+!        - Use fileio module to switch Fortran/NetCDF binary output.
 !      gkvp_f0.57 (S. Maeyama, Oct 2020)
 !        - Version number f0.57 is removed from filename.
 !        - Frequency analysis is applied only when calc_type="lin_freq".
@@ -23,6 +25,9 @@ MODULE GKV_out
   use GKV_colliimp, only: colliimp_colli
   use GKV_dtc,   only: flag_time_advnc, flag_time_split
   use GKV_tips,  only: tips_flush, tips_rescale_for_linear_runs
+  !fj start 202010
+  use GKV_fileio
+  !fj end 202010
 
   implicit none
 
@@ -188,8 +193,11 @@ END SUBROUTINE update_dh
       end do
 !$OMP end parallel
 
-      rewind ocnt
-      write( unit=ocnt ) time, wf
+      !fj start 202010
+      !rewind ocnt
+      !write( unit=ocnt ) time, wf
+      call fileio_write_cnt( wf, time )
+      !fj end time202010
 
       deallocate( wf )
 
@@ -237,17 +245,24 @@ END SUBROUTINE update_dh
             end do
           end do
         end do
-        write( unit=ofxv ) time, fout
+        !fj start 202010
+        !write( unit=ofxv ) time, fout
+        call fileio_write_fxv( fout, time )
+        !fj end 202010
 
         deallocate( fout )
 
       else if( id == 1 ) then
 
         !- OUTPUT binary data phi/*.phi.* and phi/*.Al.*
-        if ( ranks == 0 .AND. vel_rank == 0 ) then
-          write( unit=ophi ) time, phi
-          write( unit=oAl  ) time, Al
-        end if
+        !fj start 202011
+        !if ( ranks == 0 .AND. vel_rank == 0 ) then
+          !write( unit=ophi ) time, phi
+          !write( unit=oAl  ) time, Al
+        !end if
+        call fileio_write_phi( phi, time )
+        call fileio_write_Al ( Al,  time )
+        !fj end 202011
 
         !- OUTPUT binary data phi/*.mom.*
         call write_moments ( ff, time )
@@ -267,11 +282,16 @@ END SUBROUTINE update_dh
                        dcd, pflux_es, pflux_em, eflux_es, eflux_em )
 
         !- OUTPUT binary data phi/*.trn.*
-        if ( zsp_rank == 0 .and. vel_rank == 0 ) then
-          write( unit=otrn ) time, entrpy, fenegy, menegy,    &
-                             peint, pmint, neint, nmint, dcd, &
-                             pflux_es, pflux_em, eflux_es, eflux_em
-        end if
+        !fj start 202011
+        !if ( zsp_rank == 0 .and. vel_rank == 0 ) then
+          !write( unit=otrn ) time, entrpy, fenegy, menegy,    &
+          !                   peint, pmint, neint, nmint, dcd, &
+          !                   pflux_es, pflux_em, eflux_es, eflux_em
+        !end if
+        call fileio_write_trn( entrpy, fenegy, menegy,    &
+             peint, pmint, neint, nmint, dcd, &
+             pflux_es, pflux_em, eflux_es, eflux_em, time )
+        !fj end 202011
 
         !- OUTPUT ascii data hst/*.eng.*, *.men.*, *.wes.*, *.wem.*,
         !                        *.ges.*, *.gem.*, *.qes.*, *.qem.*
@@ -1247,9 +1267,13 @@ END SUBROUTINE update_dh
         end do
       end do
 
-      if ( vel_rank == 0 ) then
-        write( unit=omom ) time, dens, upara, ppara, pperp, qlpara, qlperp
-      end if
+      !fj start 202011
+      !if ( vel_rank == 0 ) then
+        !write( unit=omom ) time, dens, upara, ppara, pperp, qlpara, qlperp
+      !end if
+      call fileio_write_mom( dens, upara, ppara, &
+                             pperp, qlpara, qlperp, time )
+      !fj end 202011
 
       deallocate( wf )
       deallocate(   dens )

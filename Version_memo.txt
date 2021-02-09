@@ -1,3 +1,8 @@
+gkvp_f0.60                                              S. Maeyama     Feb 2021
+1) NetCDF4+parallel HDF5 is added for optional output of GKV.
+
+
+
 gkvp_f0.59                                              S. Maeyama     Oct 2020
 1) NEC SX-Aurora Makefile/shoot/sub.q are added. Tuned source codes are used.
 

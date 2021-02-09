@@ -65,14 +65,14 @@ echo " OpenMP threads per MPI: ${OMP_NUM_THREADS}"
 
 ### Working directory 
 DIR=%%DIR%%
-LDM=gkvp_mpifft.exe
+LDM=gkvp.exe
 NL=gkvp_namelist.%%%
 
 export XOS_MMM_L_PAGING_POLICY=demand:demand:demand # For Largepage
 
 export PLE_MPI_STD_EMPTYFILE="off" # Suppress stdout of filesize-0
 
-module load fftw-tune
+module load fftw-tune phdf5 netcdf-c netcdf-fortran
 ###module unload tcs
 ###module load fftw/3.3.8
 ###export PATH=/opt/FJSVxtclanga/tcsds-1.2.25/bin:$PATH

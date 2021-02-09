@@ -3,8 +3,10 @@ MODULE GKV_tips
 !
 !    Some useful tools and tips
 !
-!    Update history
+!    Update history of gkvp_tips.f90
 !    --------------
+!      gkvp_f0.60 (S. Maeyama, Jan 2021)
+!        - flush for binary is removed, for the usage of NetCDF.
 !      gkvp_f0.57 (S. Maeyama, Oct 2020)
 !        - Version number f0.57 is removed from filename.
 !
@@ -47,18 +49,20 @@ CONTAINS
 !--------------------------------------
 
         call flush(olog)
-        call flush(ocnt)
-        call flush(ofxv)
-        if ( vel_rank == 0 ) then
-          call flush(omom)
-        end if
-        if ( ranks == 0 .AND. vel_rank == 0 ) then
-          call flush(ophi)
-          call flush(oAl)
-        end if
-        if ( zsp_rank == 0 .AND. vel_rank == 0 ) then
-          call flush(otrn)
-        end if
+        !fj start 202010
+        !call flush(ocnt)
+        !call flush(ofxv)
+        !if ( vel_rank == 0 ) then
+        !  call flush(omom)
+        !end if
+        !if ( ranks == 0 .AND. vel_rank == 0 ) then
+        !  call flush(ophi)
+        !  call flush(oAl)
+        !end if
+        !if ( zsp_rank == 0 .AND. vel_rank == 0 ) then
+        !  call flush(otrn)
+        !end if
+        !fj end 202010
         if( rankg == 0 ) then
           call flush(odtc)
           call flush(oeng)
