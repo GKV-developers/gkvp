@@ -1,9 +1,14 @@
 MODULE GKV_math
+!-------------------------------------------------------------------------------
 !
-!  Mathematical functions
+!    Mathematical functions
 !
-!  S. Maeyama     (March 2017)
+!    Update history of gkvp_set.f90
+!    --------------
+!      gkvp_f0.61 (S. Maeyama, Mar 2021)
+!        - random_seed is added for reproducibility.
 !
+!-------------------------------------------------------------------------------
 
   use GKV_header
 
