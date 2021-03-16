@@ -1841,7 +1841,7 @@ CONTAINS
     real(kind=DP),    dimension(:),         allocatable :: rr
     character(15) :: colliflag
     integer :: input_status
-    integer :: mx, my, iz, iv, im, nx_init
+    integer :: mx, my, iz, iv, im, nx_init, gmy
 
 
       ff(:,:,:,:,:) = ( 0._DP, 0._DP )
@@ -1875,11 +1875,12 @@ CONTAINS
             do iz = -nz, nz-1
               do my = ist1_y, iend_y
             ! do my = ist_y, iend_y
+                gmy = my + (ny+1)*rankw
                 do mx = -nx_init, nx_init
                   ff(mx,my,iz,iv,im)   = dns1(ranks) * fmx(iz,iv,im)  &
                           * ( 1._DP + vl(iv) + zz(iz) )**2            &
                           * exp( -zz(iz)**2 / (0.2_DP*pi)**2 ) &
-                          * exp( ui * twopi * rr(mx+nx+1+(2*nx+1)*my) )
+                          * exp( ui * twopi * rr(mx+nx+1+(2*nx+1)*gmy) )
                 end do
               end do
             end do

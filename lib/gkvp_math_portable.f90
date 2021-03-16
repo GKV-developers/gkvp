@@ -160,6 +160,13 @@ CONTAINS
 !
 !
     real(kind=DP), intent(inout), dimension(:) :: rr
+    integer :: n
+    integer, allocatable :: iseed(:)
+     call random_seed(size=n)
+     allocate(iseed(n))
+     iseed(:) = 211501
+     call random_seed(put=iseed)
+     deallocate(iseed)
 !
       call random_number(rr)
 !
