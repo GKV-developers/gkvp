@@ -5,6 +5,8 @@ MODULE GKV_colli
 !
 !    Update history of gkvp_colli.f90
 !    --------------
+!      gkvp_f0.61 (S. Maeyama, Mar 2020)
+!        - Treat tracer particles (fcs=0).
 !      gkvp_f0.57 (S. Maeyama, Oct 2020)
 !        - Version number f0.57 is removed from filename.
 !        - Deallocations of gge, ggo are added.

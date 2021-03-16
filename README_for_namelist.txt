@@ -6,6 +6,7 @@ Updated for gkvp_f0.47                                  S. Maeyama     Nov 2016
 Updated for gkvp_f0.48                                  S. Maeyama     Dec 2016
 Updated for gkvp_f0.50                                  S. Maeyama     Sep 2017
 Updated for gkvp_f0.55                                   M. Nakata     Dec 2019
+Updated for gkvp_f0.61                                  S. Maeyama   March 2021
 
 %%% How to run the code %%%
 
@@ -60,6 +61,7 @@ num_triad_diag:        - Number of triad transfer diagnostics, which should be
 
 equib_type: "analytic" -  Analytic helical field with the metrics in cylinder
             "s-alpha"  -  s-alpha model with alpha = 0 (cylindrical metrics)
+       "s-alpha-shift" -  s-alpha model with Shafranov shift
             "circ-MHD" -  Concentric circular field with the consistent metrics 
             "vmec"     -  Tokamak/stellarator field from the VMEC code
             "eqdsk"    -  Tokamak field (MEUDAS/TOPICS or G-EQDSK) via IGS code

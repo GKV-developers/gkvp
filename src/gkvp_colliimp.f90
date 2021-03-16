@@ -5,6 +5,8 @@ MODULE GKV_colliimp
 !
 !    Update history of gkvp_colliimp.f90
 !    --------------
+!      gkvp_f0.61 (S. Maeyama, Mar 2021)
+!        - Treat tracer particles (fcs=0), that has no field-particle collision.
 !      gkvp_f0.57 (S. Maeyama, Oct 2020)
 !        - Version number f0.57 is removed from filename.
 !        - Bias factor nu is modified.
