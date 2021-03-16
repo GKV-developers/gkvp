@@ -168,18 +168,22 @@ CONTAINS
                                               * gfmx(iv,im,iz) * (gxxa**2/1.5_DP - 1._DP) * 2._DP     &
                                                 / (1._DP + calpha(ia,ib)**2)**1.5 )
 
-                gy_fld(1,iv,im,ia,ib,iz) = - (fcs(ib)/Znum(ib)) / (fcs(ia)/Znum(ia)) * calpha(ia,ib) * Anum(ia)  & 
-                                             * tau(ib) * ctheta(ia,ib) * ctheta(ib,ia) / tau(ia) / cgamma(ia,ib) &
-                                                      * ( gc_t01 - cxi(ia,ib) * gfmx(iv,im,iz) * gvl(iv) ) 
-                gy_fld(2,iv,im,ia,ib,iz) = gy_fld(1,iv,im,ia,ib,iz) * gvp(im,iz) / gvl(iv)  
-                gy_fld(3,iv,im,ia,ib,iz) = - (fcs(ib)/Znum(ib)) / (fcs(ia)/Znum(ia))                          & 
-                                                      * tau(ib) * ctheta(ia,ib) * ctheta(ib,ia) / ceta(ia,ib) &
-                                                      * ( gc_t02                                          &
-                                                          - cxi(ia,ib)/(1._DP+calpha(ia,ib)**2)*gfmx(iv,im,iz)&
-                                                            *(2._DP*gxxa**2 - 3._DP) ) 
-                gy_fld(4,iv,im,ia,ib,iz) = - gy_fld(1,iv,im,ia,ib,iz)*cxi(ib,ia) 
-                gy_fld(5,iv,im,ia,ib,iz) = - gy_fld(2,iv,im,ia,ib,iz)*cxi(ib,ia) 
-                gy_fld(6,iv,im,ia,ib,iz) = - gy_fld(3,iv,im,ia,ib,iz)*2._DP*cxi(ib,ia)/(1._DP+calpha(ib,ia)**2) 
+                if (fcs(ia) == 0.d0 .or. fcs(ib) == 0.d0) then !-care for tracer particle(dens=0)-
+                  gy_fld(1:6,iv,im,ia,ib,iz) = 0._DP
+                else
+                  gy_fld(1,iv,im,ia,ib,iz) = - (fcs(ib)/Znum(ib)) / (fcs(ia)/Znum(ia)) * calpha(ia,ib) * Anum(ia)  & 
+                                               * tau(ib) * ctheta(ia,ib) * ctheta(ib,ia) / tau(ia) / cgamma(ia,ib) &
+                                                        * ( gc_t01 - cxi(ia,ib) * gfmx(iv,im,iz) * gvl(iv) ) 
+                  gy_fld(2,iv,im,ia,ib,iz) = gy_fld(1,iv,im,ia,ib,iz) * gvp(im,iz) / gvl(iv)  
+                  gy_fld(3,iv,im,ia,ib,iz) = - (fcs(ib)/Znum(ib)) / (fcs(ia)/Znum(ia))                          & 
+                                                        * tau(ib) * ctheta(ia,ib) * ctheta(ib,ia) / ceta(ia,ib) &
+                                                        * ( gc_t02                                          &
+                                                            - cxi(ia,ib)/(1._DP+calpha(ia,ib)**2)*gfmx(iv,im,iz)&
+                                                              *(2._DP*gxxa**2 - 3._DP) ) 
+                  gy_fld(4,iv,im,ia,ib,iz) = - gy_fld(1,iv,im,ia,ib,iz)*cxi(ib,ia) 
+                  gy_fld(5,iv,im,ia,ib,iz) = - gy_fld(2,iv,im,ia,ib,iz)*cxi(ib,ia) 
+                  gy_fld(6,iv,im,ia,ib,iz) = - gy_fld(3,iv,im,ia,ib,iz)*2._DP*cxi(ib,ia)/(1._DP+calpha(ib,ia)**2) 
+                end if
 
               end do
             end do

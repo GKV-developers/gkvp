@@ -61,7 +61,7 @@ CONTAINS
 
 ! --- factor for collision frequencies
     do is = 0, ns-1
-    freq_factor(is)  = (dens(is) * ee**4 * Lref*1.d2) / (Tref*1.d3*ev2erg)**2 
+      freq_factor(is)  = (dens(is) * ee**4 * Lref*1.d2) / (Tref*1.d3*ev2erg)**2 
     end do
 
 
@@ -71,29 +71,43 @@ CONTAINS
 
         do is2 = 0, ns-1 
           if (sgn(is2) < 0.d0) then   !! e-e case
-            log_lambda(is1,is2) = 23.5_DP - dlog( dsqrt( dens(is1) ) * tmpr(is1)**(-1.25_DP) )  &
-                                          - dsqrt( 1.d-5 + (( dlog(tmpr(is1)) - 2._DP )**2 )/16._DP )
-
+            if (dens(is1) == 0.d0) then !-care for tracer particle(dens=0)-
+              log_lambda(is1,is2) = 0._DP
+            else
+              log_lambda(is1,is2) = 23.5_DP - dlog( dsqrt( dens(is1) ) * tmpr(is1)**(-1.25_DP) )  &
+                                            - dsqrt( 1.d-5 + (( dlog(tmpr(is1)) - 2._DP )**2 )/16._DP )
+            end if
           else                        !! e-i case
-            log_lambda(is1,is2) = 24._DP - dlog( dsqrt( dens(is1) ) / tmpr(is1) )
-          endif
+            if (dens(is1) == 0.d0) then !-care for tracer particle(dens=0)-
+              log_lambda(is1,is2) = 0._DP
+            else
+              log_lambda(is1,is2) = 24._DP - dlog( dsqrt( dens(is1) ) / tmpr(is1) )
+            end if
+          end if
         end do
 
       else                     !! For is1 = ions
 
         do is2 = 0, ns-1 
           if (sgn(is2) < 0.d0) then   !! i-e case
-            log_lambda(is1,is2) = 24._DP - dlog( dsqrt( dens(is2) ) / tmpr(is2) )
-
+            if (dens(is2) == 0.d0) then !-care for tracer particle(dens=0)-
+              log_lambda(is1,is2) = 0._DP
+            else
+              log_lambda(is1,is2) = 24._DP - dlog( dsqrt( dens(is2) ) / tmpr(is2) )
+            end if
           else                       !! i-i case
-            log_lambda(is1,is2) = &
-              23._DP - dlog( Znum(is1)*Znum(is2)*(Anum(is1)+Anum(is2))/(Anum(is1)*tmpr(is2)+Anum(is2)*tmpr(is1)) &
-                             * dsqrt( (dens(is1) * Znum(is1)**2)/tmpr(is1)                                       &
-                                     + (dens(is2) * Znum(is2)**2)/tmpr(is2) ) )
-          endif
+            if (dens(is1) == 0.d0 .and. dens(is2) == 0.d0) then !-care for tracer particle(dens=0)-
+              log_lambda(is1,is2) = 0._DP
+            else
+              log_lambda(is1,is2) = 23._DP &
+                - dlog( Znum(is1)*Znum(is2)*(Anum(is1)+Anum(is2))/(Anum(is1)*tmpr(is2)+Anum(is2)*tmpr(is1)) &
+                        * dsqrt( (dens(is1) * Znum(is1)**2)/tmpr(is1)                                       &
+                               + (dens(is2) * Znum(is2)**2)/tmpr(is2) ) )
+            end if
+          end if
         end do
 
-      endif
+      end if
     end do
 
 ! --- Constant parameters
