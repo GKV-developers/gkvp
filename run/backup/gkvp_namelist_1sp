@@ -1,9 +1,10 @@
- &cmemo memo="GKV-plus f0.57 developed for pre-exa-scale computing", &end
+ &cmemo memo="GKV-plus f0.61 developed for pre-exa-scale computing", &end
  &calct calc_type="nonlinear",
         z_bound="outflow",
         z_filt="off",
         z_calc="cf4",
         art_diff=0.1d0,
+        init_random=.true.,
         num_triad_diag=0, &end
  &triad mxt = 0, myt = 0/
  &equib equib_type = "s-alpha", &end

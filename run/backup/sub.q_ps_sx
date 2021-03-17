@@ -40,10 +40,6 @@
 #PBS -T necmpi                    # necessary for MPI job
 #PBS -l elapstim_req=00:15:00     # elapsed time limit
 
-#---#PBS -l coresz_prc=10
-#---#PBS --venum-lhost=8
-#---#PBS -b 4                     # number of nodes
-
 #PBS --venode=4                   # total number of VE
 #PBS --venum-lhost=8              # number of VE per a logical node
 #PBS -v OMP_NUM_THREADS=1         # number of threads per MPI process
@@ -95,3 +91,9 @@ mpirun -n ${MPI_procs} ${DIR}/${LDM}
 
 date
 #touch complete
+
+
+#---#PBS -l coresz_prc=10
+#---#PBS --venum-lhost=8
+#---#PBS -b 4                     # number of nodes
+

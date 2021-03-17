@@ -7,7 +7,7 @@
 
 
 #### Environment setting
-set DIR=`pwd`/data_SmallGridIO
+set DIR=`pwd`/ITGae-lin
 set LDM=gkvp.exe
 set NL=gkvp_namelist
 set SC=qsub

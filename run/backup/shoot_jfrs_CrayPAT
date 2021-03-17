@@ -10,7 +10,7 @@
 
 
 #### Environment setting
-set DIR=/work/smaeyama/gkvp/f0.57/test17_rdc_craypat
+set DIR=/work/smaeyama/gkvp/f0.61/ITGae-lin
 set LDM=gkvp_mpifft.exe
 set NL=gkvp_namelist
 set SC=sbatch
@@ -18,7 +18,7 @@ set JS=sub.q
 ## For VMEC, set VMCDIR including metric_boozer.bin.dat
 #set VMCDIR=./input_vmec/vmec_sample_nss501ntheta1024nzeta0
 ## For IGS, set IGSDIR including METRIC_{axi,boz,ham}.OUT
-set IGSDIR=/home/smaeyama/gkvp/input_eqdsk/shortfall_nss2048ntheta049
+#set IGSDIR=/home/smaeyama/gkvp/input_eqdsk/shortfall_nss2048ntheta049
 
 
 #### for CrayPAT ###
