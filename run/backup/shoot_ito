@@ -14,7 +14,7 @@ if [ $# -lt 2 ]; then
 fi
 
 #### Environment setting
-DIR=`pwd`/data_SmallGridIO
+DIR=`pwd`/ITGae-lin
 LDM=gkvp.exe
 NL=gkvp_namelist
 SC=pjsub

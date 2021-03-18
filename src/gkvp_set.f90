@@ -5,6 +5,9 @@ MODULE GKV_set
 !
 !    Update history of gkvp_set.f90
 !    --------------
+!      gkvp_f0.61 (S. Maeyama, Mar 2021)
+!        - equib_type = "s-alpha-shift" is added.
+!        - Initial random phase rr is set by global (mx,gmy) indices.
 !      gkvp_f0.60 (S. Maeyama, Jan 2021)
 !        - Use fileio module to switch Fortran/NetCDF binary output.
 !      gkvp_f0.58 (S. Maeyama, Oct 2020)
@@ -66,6 +69,7 @@ CONTAINS
       if ( trim(equib_type) == "slab"     .OR. &
            trim(equib_type) == "analytic" .OR. &
            trim(equib_type) == "s-alpha"  .OR. &
+           trim(equib_type) == "s-alpha-shift"  .OR. &
            trim(equib_type) == "circ-MHD" .OR. &
            trim(equib_type) == "vmec"     .OR. &
            trim(equib_type) == "eqdsk" ) then
@@ -592,6 +596,7 @@ CONTAINS
 
       else if( trim(equib_type) == "analytic"  .OR.  &
                trim(equib_type) == "s-alpha"   .OR.  &
+               trim(equib_type) == "s-alpha-shift"   .OR.  &
                trim(equib_type) == "circ-MHD" ) then
 
 
@@ -1062,24 +1067,26 @@ CONTAINS
            !-------------------------
 
 !!! for s-alpha !!! <--- the current version is the same as "analytic"
-          else if( trim(equib_type) == "s-alpha"  ) then
+          else if( trim(equib_type) == "s-alpha" .or. trim(equib_type) == "s-alpha-shift" ) then
 
             q_bar = q_0
             r_major = 1._DP ! in the R0 unit
 
-            !--- s-alpha model without Shafranov shift -
-            alpha_MHD = 0._DP
-            !!--- s-alpha model with Shafranov shift ----
-            !p_total = 0._DP
-            !dp_totaldx = 0._DP
-            !beta_total = 0._DP
-            !do is = 0, ns-1
-            !  p_total = p_total + fcs(is) * tau(is) / Znum(is)
-            !  dp_totaldx = dp_totaldx - fcs(is) * tau(is) / Znum(is) * (R0_Ln(is) + R0_Lt(is))
-            !  beta_total = beta_total + 2._DP * beta * fcs(is) * tau(is) / Znum(is)
-            !end do
-            !alpha_MHD = - q_0**2 * r_major * beta_total * dp_totaldx / p_total
-            !!-------------------------------------------
+            if (trim(equib_type) == "s-alpha") then
+              !--- s-alpha model without Shafranov shift -
+              alpha_MHD = 0._DP
+            else if (trim(equib_type) == "s-alpha-shift") then
+              !--- s-alpha model with Shafranov shift ----
+              p_total = 0._DP
+              dp_totaldx = 0._DP
+              beta_total = 0._DP
+              do is = 0, ns-1
+                p_total = p_total + fcs(is) * tau(is) / Znum(is)
+                dp_totaldx = dp_totaldx - fcs(is) * tau(is) / Znum(is) * (R0_Ln(is) + R0_Lt(is))
+                beta_total = beta_total + 2._DP * beta * fcs(is) * tau(is) / Znum(is)
+              end do
+              alpha_MHD = - q_0**2 * r_major * beta_total * dp_totaldx / p_total
+            end if
 
             theta = zz(iz)
 
@@ -1841,7 +1848,7 @@ CONTAINS
     real(kind=DP),    dimension(:),         allocatable :: rr
     character(15) :: colliflag
     integer :: input_status
-    integer :: mx, my, iz, iv, im, nx_init
+    integer :: mx, my, iz, iv, im, nx_init, gmy
 
 
       ff(:,:,:,:,:) = ( 0._DP, 0._DP )
@@ -1875,11 +1882,12 @@ CONTAINS
             do iz = -nz, nz-1
               do my = ist1_y, iend_y
             ! do my = ist_y, iend_y
+                gmy = my + (ny+1)*rankw
                 do mx = -nx_init, nx_init
                   ff(mx,my,iz,iv,im)   = dns1(ranks) * fmx(iz,iv,im)  &
                           * ( 1._DP + vl(iv) + zz(iz) )**2            &
                           * exp( -zz(iz)**2 / (0.2_DP*pi)**2 ) &
-                          * exp( ui * twopi * rr(mx+nx+1+(2*nx+1)*my) )
+                          * exp( ui * twopi * rr(mx+nx+1+(2*nx+1)*gmy) )
                 end do
               end do
             end do

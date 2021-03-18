@@ -1,3 +1,13 @@
+gkvp_f0.61                                              S. Maeyama     Mar 2021
+1) equib_type = "s-alpha-shift" is added. s-alpha model with Shafranov shift.
+
+2) random_seed is applied in lib/gkvp_math_portable.f90.
+
+3) Treat the tracer particle setting (fcs=0).
+
+
+
+
 gkvp_f0.60                                              S. Maeyama     Feb 2021
 1) NetCDF4+parallel HDF5 is added for optional output of GKV.
 

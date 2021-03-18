@@ -18,6 +18,8 @@ MODULE GKV_header
 !
 !    Update history
 !    --------------
+!      gkvp_f0.61 (S. Maeyama, Mar 2021)
+!        - equib_type is extended from len=8 to len=15.
 !      gkvp_f0.57 (S. Maeyama, Oct 2020)
 !        - Version number f0.57 is removed from filename.
 !
@@ -196,8 +198,8 @@ MODULE GKV_header
   integer :: inum
   logical :: ch_res, init_random
   character(512) :: f_log, f_hst, f_phi, f_fxv, f_cnt
-  character(8)   :: equib_type  ! "analytic", "s-alpha", "circ-MHD", "vmec", "eqdsk"
-
+  character(15)  :: equib_type  ! "analytic", "s-alpha", "s-alpha-shift",
+                                ! "circ-MHD", "vmec", "eqdsk", "slab"
 
 ! --- unit numbers for I/O
   integer, parameter :: inml = 5,  & 
