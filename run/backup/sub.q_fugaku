@@ -24,10 +24,15 @@
 ###      [Performance] 8B Put latency: 0.49-0.54 usec
 ###                    1MiB Put throughput: 6.35 GB/s
 ###
-###  - Job class (May 2020)
-###      eap-large : 385 - 27648 nodes, 10 hour, Inf run/Inf submit
-###      eap-small :   1 - 384   nodes, 10 hour, Inf run/Inf submit
-###      eap-int   :   1 - 12    nodes,  6 hour, Inf run/3   submit, interactive
+###  - Job class (June 2021)
+###      huge  : 55297 - 82944 nodes, 12 hour, Inf run/Inf submit
+###      large :   385 - 55296 nodes, 24 hour, Inf run/Inf submit
+###      small :     1 - 384   nodes, 72 hour, Inf run/Inf submit
+###      int   :     1 - 12    nodes,  6 hour, Inf run/3   submit, interactive
+###  - Low priority jobs (after using 98% of the allocated resources)
+###      large-free :   385 - 55296 nodes, 12 hour, Inf run/Inf submit
+###      small-free :     1 - 384   nodes, 12 hour, Inf run/Inf submit
+###      int-free   :     1 - 12    nodes,  6 hour, Inf run/3   submit, interactive
 ###
 ###  - Commands
 ###      (Submit a batch job : "pjsub sub.q") Use shoot script for GKV.
@@ -37,8 +42,7 @@
 ###      Show disk usage     : "accountd"
 ##############
 
-#PJM --rsc-list "rscunit=rscunit_ft01"
-#PJM --rsc-list "rscgrp=eap-small"  # Job class     
+#PJM --rsc-list "rscgrp=small"    # Job class     
 #PJM --rsc-list "node=8"          # Number of nodes
 #PJM --rsc-list "elapse=02:10:00" # Execute time
 #PJM --mpi "proc=32"              # Number of MPI (= Number of nodes x 4)
