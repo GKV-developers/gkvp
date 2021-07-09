@@ -68,7 +68,7 @@ DIR=%%DIR%%
 LDM=gkvp.exe
 NL=gkvp_namelist.%%%
 
-export XOS_MMM_L_PAGING_POLICY=demand:demand:demand # For Largepage
+#export XOS_MMM_L_PAGING_POLICY=demand:demand:demand # For Largepage
 
 export PLE_MPI_STD_EMPTYFILE="off" # Suppress stdout of filesize-0
 
