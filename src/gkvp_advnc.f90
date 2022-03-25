@@ -16,12 +16,13 @@ MODULE GKV_advnc
   use GKV_fld,   only: fld_esfield, fld_emfield_hh, fld_hh2ff
   use GKV_exb,   only: exb_NL_term
   use GKV_colli, only: colli_LB!, colli_full
-  use GKV_colliimp, only: colliimp_calc_colli_full
+  use GKV_colliimp, only: colliimp_calc_colli_full, colliimp_set_param
   use GKV_bndry, only: bndry_bound_e,  &
                        bndry_zv_buffin, bndry_zv_sendrecv, bndry_zv_buffout
   use GKV_clock, only: clock_sta, clock_end
   use GKV_zfilter, only: zfilter
   use GKV_tips,  only: tips_reality
+  use GKV_geom, only: geom_increment_time
 
   implicit none
 
@@ -92,6 +93,17 @@ CONTAINS
       allocate( ef(-nx:nx,0:ny,-nz:nz-1,1:2*nv,0:nm) )
 
       do istep = 1, 4
+
+       !%%% For shearflow rotating flux tube model %%%
+        if (gamma_e /= 0._DP .and. trim(flag_shearflow) == "rotating") then
+          if (istep == 2 .or. istep == 4) then
+            call geom_increment_time(0.5_DP * dt)
+            if (trim(col_type) == "full" .or. trim(col_type) == "lorentz" .or. trim(time_advnc) == "imp_colli") then
+              call colliimp_set_param
+            end if
+          end if
+        end if
+       !%%%
 
         call caldlt_rev( colliflag, ff, phi, Al, hh, dh, cf, ef )
 
@@ -479,7 +491,7 @@ CONTAINS
       dimension(-nx:nx,0:ny,-nz:nz-1,1:2*nv)             :: lf
 
     real(kind=DP), dimension(-nz:nz-1) :: cefz, cefz2
-    real(kind=DP) :: cefv, cs1
+    real(kind=DP) :: cefv, cs1, rotating_cf4, rotating_up5
     integer  ::  mx, my, iz, iv
 
 
@@ -494,6 +506,15 @@ CONTAINS
         cefz2(iz)  = 1._DP / ( 60._DP * dpara(iz) ) * sqrt( tau(ranks) / Anum(ranks) )
       end do
       cefv   = 1._DP / ( 12._DP * dv ) * sqrt( tau(ranks) / Anum(ranks) )
+     !%%% For shearflow rotating flux tube model %%%
+      if (gamma_e /= 0._DP .and. trim(flag_shearflow) == "rotating") then
+        rotating_cf4 = - gamma_e / (s_hat_g * 12._DP * (zz(0)-zz(-1)))
+        rotating_up5 = - gamma_e / (s_hat_g * 60._DP * (zz(0)-zz(-1)))
+      else
+        rotating_cf4 = 0._DP
+        rotating_up5 = 0._DP
+      end if
+     !%%%
 
       if (trim(z_calc) == "cf4") then
 
@@ -503,7 +524,10 @@ CONTAINS
           do my = ist_y, iend_y
             do mx = -nx, nx
               lf(mx,my,iz,iv) = lf(mx,my,iz,iv)       &
-                 - vl(iv) * cefz(iz) * (              &
+              !%%% For shearflow rotating flux tube model %%%
+              !!!- vl(iv) * cefz(iz) * (              &
+                 - (vl(iv) * cefz(iz) + rotating_cf4) * ( &
+              !%%%
                      -         ff(mx,my,iz+2,iv)      &
                      + 8._DP * ff(mx,my,iz+1,iv)      &
                      - 8._DP * ff(mx,my,iz-1,iv)      &
@@ -540,6 +564,13 @@ CONTAINS
               do my = ist_y, iend_y
                 do mx = -nx, nx
                   lf(mx,my,iz,iv) = lf(mx,my,iz,iv)       &
+                    !%%% For shearflow rotating flux tube model %%%
+                     - rotating_cf4 * (                   &
+                         -         ff(mx,my,iz+2,iv)      &
+                         + 8._DP * ff(mx,my,iz+1,iv)      &
+                         - 8._DP * ff(mx,my,iz-1,iv)      &
+                         +         ff(mx,my,iz-2,iv) )    &
+                    !%%%
                      - vl(iv) * cefz2(iz) * (             &
                          - 3._DP * ff(mx,my,iz+2,iv)      &
                          +30._DP * ff(mx,my,iz+1,iv)      &
@@ -568,6 +599,13 @@ CONTAINS
               do my = ist_y, iend_y
                 do mx = -nx, nx
                   lf(mx,my,iz,iv) = lf(mx,my,iz,iv)       &
+                    !%%% For shearflow rotating flux tube model %%%
+                     - rotating_cf4 * (                   &
+                         -         ff(mx,my,iz+2,iv)      &
+                         + 8._DP * ff(mx,my,iz+1,iv)      &
+                         - 8._DP * ff(mx,my,iz-1,iv)      &
+                         +         ff(mx,my,iz-2,iv) )    &
+                    !%%%
                      - vl(iv) * cefz2(iz) * (             &
                          + 2._DP * ff(mx,my,iz+3,iv)      &
                          -15._DP * ff(mx,my,iz+2,iv)      &

@@ -14,10 +14,10 @@ if [ $# -lt 2 ]; then
 fi
 
 #### Environment setting
-DIR=/data/group1/z43460z/gkvp/f0.61/ITGae-lin
+DIR=/data/lng/maeyama/gkvp/f0.62/dev_shearflow/dev19_gamma0.2_remap
 LDM=gkvp.exe
 NL=gkvp_namelist
-SC=pjsub
+SC=qsub
 JS=sub.q
 ### For VMEC, set VMCDIR including metric_boozer.bin.dat
 #VMCDIR=./input_vmec/vmec_sample_nss501ntheta1024nzeta0
@@ -76,15 +76,19 @@ do
   #${SC} ${fln_JS}
   if [ -z "$j"  -a  $i -eq $1 ]; then
     echo "*** submit first step job ${fln_JS} ***"
-    ${SC} --step --sparam "sn=$i" ${fln_JS} | tee shoottempfile
-    j=`awk '{sub("_.*",""); print $6}' shoottempfile`
+    ${SC} ${fln_JS} | tee shoottempfile
+    j=`awk '{sub(".nqsv*",""); print $2}' shoottempfile`
     rm shoottempfile
   else
     echo "*** submit sequential step job ${fln_JS} ***"
-    ${SC} --step --sparam "jid=$j,sd=ec!=0:all" ${fln_JS}
+    ${SC} --after $j ${fln_JS} | tee shoottempfile
+    j=`awk '{sub(".nqsv*",""); print $2}' shoottempfile`
+    rm shoottempfile
   fi
+
 
   sleep 1
   i=$(( $i + 1 ))
 
 done
+

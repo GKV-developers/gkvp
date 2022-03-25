@@ -38,9 +38,9 @@ MODULE GKV_header
 !  in  x, y,z,v,m (0:2*nxw-1,  0:2*nyw-1,-global_nz:global_nz-1,1:2*global_nv,0:global_nm)
 !  in kx,ky,z,v,m (   -nx:nx,0:global_ny,-global_nz:global_nz-1,1:2*global_nv,0:global_nm)
 
-  integer, parameter :: nxw = 2, nyw = 20
-  integer, parameter :: nx = 0, global_ny = 12 ! 2/3 de-aliasing rule
-  integer, parameter :: global_nz = 48, global_nv = 24, global_nm = 15
+  integer, parameter :: nxw = 20, nyw = 20
+  integer, parameter :: nx = 4, global_ny = 1 ! 2/3 de-aliasing rule
+  integer, parameter :: global_nz = 12, global_nv = 24, global_nm = 7
 
   integer, parameter :: nzb = 2, &  ! the number of ghost grids in z
                         nvb = 2     ! the number of ghost grids in v and m
@@ -49,7 +49,7 @@ MODULE GKV_header
 !  Data distribution for MPI
 !--------------------------------------
 
-  integer, parameter :: nprocw = 2, nprocz = 4, nprocv = 2, nprocm = 2, nprocs = 1
+  integer, parameter :: nprocw = 1, nprocz = 2, nprocv = 4, nprocm = 2, nprocs = 1
 
 !--------------------------------------
 !  Parameters for variable sizes
@@ -169,7 +169,7 @@ MODULE GKV_header
                                           tau,  &    ! T-ratio
                                          dns1        ! initial perturbation amp.
   real(kind=DP) :: dv, cfsrf, lambda_i, q_0, q_bar, beta, tau_ad, vmax
-  real(kind=DP) :: mach, uprime, gamma_e, kxmin_g, kymin_g, tlim_exb
+  real(kind=DP) :: mach, uprime, gamma_e, kxmin_g, kymin_g, tlim_exb, s_hat_g
   real(kind=DP) :: Nref, Lref, Tref, Zeff
   integer       :: iFLR, icheck, ibprime, nx0
   real(kind=DP) :: baxfactor
@@ -200,6 +200,11 @@ MODULE GKV_header
   character(512) :: f_log, f_hst, f_phi, f_fxv, f_cnt
   character(15)  :: equib_type  ! "analytic", "s-alpha", "s-alpha-shift",
                                 ! "circ-MHD", "vmec", "eqdsk", "slab"
+
+  !character(15)  :: flag_shearflow = "remap"   ! Wavevector remap method
+  !                                             ! with nearest grid approximation
+  !                                             ! (Discontinuous in time)
+  character(15)  :: flag_shearflow = "rotating" ! Rotating flux tube model
 
 ! --- unit numbers for I/O
   integer, parameter :: inml = 5,  & 
