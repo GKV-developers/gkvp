@@ -23,6 +23,9 @@ MODULE GKV_geom
   use GKV_vmecbzx, only: vmecbzx_boozx_read, vmecbzx_boozx_coeff
 ! for tokamak(eqdsk) equilibrium
   use GKV_igs,    only: igs_read, igs_coeff
+  !sakano_ring-dipole st 202303
+  use GKV_ring,   only: ring_coordinates
+  !sakano_ring-dipole end 202303
 
   implicit none
 
@@ -38,7 +41,7 @@ MODULE GKV_geom
      ! Metrics in GKV coordinates (x,y,z)
      ! Metrics in flux coordinates (r,t,q)=(rho,theta,zeta)
       real(kind=DP), dimension(-global_nz:global_nz-1) :: zz    ! The rotating flux tube coordinate (= z'')
-      real(kind=DP), dimension(-global_nz:global_nz-1) :: theta ! The geometrical poloidal angle theta_pol, not the flux-coordinate theta
+      real(kind=DP), dimension(-global_nz:global_nz-1) :: theta ! The poloidal angle theta_pol, not the flux-coordinate theta
       real(kind=DP), dimension(-global_nz:global_nz-1) :: omg   ! Magnetic field strength
       real(kind=DP), dimension(-global_nz:global_nz-1) :: &
           domgdx, domgdy, domgdz, gxx, gxy, gxz, gyy, gyz, gzz, rootg_xyz
@@ -97,7 +100,7 @@ MODULE GKV_geom
     real(kind=DP) :: r_major
 
     integer, parameter :: num_omtr = 13
-    real(kind=DP) :: metric_l(1:num_omtr,-nz:nz-1), metric_g(1:num_omtr,-global_nz:global_nz-1)
+!   real(kind=DP) :: metric_l(1:num_omtr,-nz:nz-1), metric_g(1:num_omtr,-global_nz:global_nz-1)
 
     real(kind=DP) :: s_hat
 
@@ -116,6 +119,10 @@ MODULE GKV_geom
     integer       :: q_type            ! 0:use q and s_hat value in confp, 1:calclated by IGS
     integer       :: isw, nss, ntheta, nzeta
     real(kind=DP) :: phi_ax            ! axisymmetric toroidal angle 
+
+!sakano_ring-dipole st 202303
+    real(kind=DP) :: ring_a
+!sakano_ring-dipole end 202303
 
     real(kind=DP) :: lz_l
 
@@ -165,6 +172,9 @@ CONTAINS
     namelist /vmecp/ s_input, nss, ntheta, nzeta
 
     namelist /igsp/ s_input, mc_type, q_type, nss, ntheta
+!sakano_ring-dipole st 202303
+    namelist /ring/ ring_a, kxmin
+!sakano_ring-dipole end 202303
 
       tau(:)   = 1.0_DP
       nu(:)    = 0.002_DP
@@ -320,8 +330,6 @@ CONTAINS
                            gg(1,1),   gg(1,2),   gg(1,3),  gg(2,2),                      &
                            gg(2,3),   gg(3,3)  )
 
-
-
         write( olog, * ) " # Configuration parameters"
         write( olog, * ) ""
         write( olog, * ) " # r_major/L_ns = ", R0_Ln(:)
@@ -353,8 +361,6 @@ CONTAINS
                            gg(2,3),   gg(3,3)  )
         end if
 
-
-
         write( olog, * ) " # Configuration parameters"
         write( olog, * ) ""
         write( olog, * ) " # r_major/L_ns = ", R0_Ln(:)
@@ -365,6 +371,24 @@ CONTAINS
         write( olog, * ) " # eps_r        = ", eps_r
         write( olog, * ) " # s_input, s_0 = ", s_input, s_0
         write( olog, * ) " # nss, ntheta  = ", nss, ntheta
+
+!sakano_ring-dipole st 202303
+      else if ( trim(equib_type) == "ring" ) then
+
+        read(inml,nml=confp)
+
+        read(inml,nml=ring)
+
+        s_hat = 0._DP
+
+        write( olog, * ) " # Configuration parameters for ring dipole configuration"
+        write( olog, * ) ""
+        write( olog, * ) " # s_hat        = ", s_hat
+        write( olog, * ) " # kxmin        = ", kxmin
+        write( olog, * ) " # ring_a       = ", ring_a
+        write( olog, * ) " # eps_r        = ", eps_r
+        write( olog, * ) " # q_0          = ", q_0
+!sakano_ring-dipole end 202303
 
       else
 
@@ -384,17 +408,19 @@ CONTAINS
     implicit none
     real(kind=DP), intent(out) :: lx, ly, eps_r_temp
     integer       :: global_iv, global_im
-    integer       :: mx, my, iz, iv, im, is, ierr_mpi
+    integer       :: mx, my, iz, iv, im
 
       eps_r_temp = eps_r
 
-      if (abs(s_hat) < 1.d-10) then ! When s_hat == ZERO
-        m_j = 0
-        kxmin = kymin
-      else if (m_j == 0) then
-        kxmin = kymin
-      else
-        kxmin    = abs(2._DP * pi * s_hat * kymin / real(m_j, kind=DP))
+      if ( trim(equib_type) /= "ring" ) then
+        if (abs(s_hat) < 1.d-10) then ! When s_hat == ZERO
+          m_j = 0
+          kxmin = kymin
+        else if (m_j == 0) then
+          kxmin = kymin
+        else
+          kxmin    = abs(2._DP * pi * s_hat * kymin / real(m_j, kind=DP))
+        end if
       end if
       lx       = pi / kxmin
       ly       = pi / kymin
@@ -487,324 +513,324 @@ CONTAINS
   END SUBROUTINE geom_init_kxkyzvm
 
 
-!--------------------------------------
-  SUBROUTINE geom_init_metric_old
-!--------------------------------------
-    implicit none
-    real(kind=DP) :: theta, domgdz, domgdx, domgdy
-    real(kind=DP), dimension(1:3,1:3) :: gg
-
-    integer :: iz, is
-    
-
-        do iz = -nz, nz-1
-
-!!! for slab model
-          if ( trim(equib_type) == "slab") then
-
-            q_bar = q_0 
-            r_major = 1._DP ! in the R0 unit
-            theta = zz(iz)
-
-            omg(iz)   = 1._DP
-            rootg(iz) = q_0*r_major
-
-           !- for OUTPUT hst/*.mtr.* -
-            domgdz = 0._DP
-            domgdy = 0._DP
-            domgdx = 0._DP
-            gg(1,1) = 1._DP
-            gg(1,2) = 0._DP
-            gg(1,3) = 0._DP
-            gg(2,1) = gg(1,2)
-            gg(2,2) = 1._DP
-            gg(2,3) = 0._DP
-            gg(3,1) = gg(1,3)
-            gg(3,2) = gg(2,3)
-            gg(3,3) = 1._DP
-            metric_l( 1,iz) = zz(iz)   ! [ 1]
-            metric_l( 2,iz) = theta    ! [ 2]
-            metric_l( 3,iz) = omg(iz)  ! [ 3]
-            metric_l( 4,iz) = domgdx   ! [ 4]
-            metric_l( 5,iz) = domgdy   ! [ 5]
-            metric_l( 6,iz) = domgdz   ! [ 6]
-            metric_l( 7,iz) = gg(1,1)  ! [ 7]
-            metric_l( 8,iz) = gg(1,2)  ! [ 8]
-            metric_l( 9,iz) = gg(1,3)  ! [ 9]
-            metric_l(10,iz) = gg(2,2)  ! [10]
-            metric_l(11,iz) = gg(2,3)  ! [11]
-            metric_l(12,iz) = gg(3,3)  ! [12]
-            metric_l(13,iz) = rootg(iz)! [13]
-           !-------------------------
-
-
-!!! for the concentric and large-aspect-ratio model !!!
-          else if( trim(equib_type) == "analytic" ) then
-
-            q_bar = q_0 
-            r_major = 1._DP ! in the R0 unit
-
-            theta = zz(iz)
-
-            omg(iz)   = 1._DP                                             &
-                      - eps_r * ( cos( zz(iz) )                           &
-                              + eps_hor * cos( lmmq   * zz(iz) - malpha ) &
-                              + eps_mor * cos( lmmqm1 * zz(iz) - malpha ) &
-                              + eps_por * cos( lmmqp1 * zz(iz) - malpha ) )
-
-            rootg(iz) = q_0*r_major/omg(iz)
-
-           !- for OUTPUT hst/*.mtr.* - !%%% under benchmark %%%
-            domgdz = eps_r * ( sin(zz(iz))                                          &
-                             + eps_hor * lmmq   * sin( lmmq   * zz(iz) - malpha )   &
-                             + eps_mor * lmmqm1 * sin( lmmqm1 * zz(iz) - malpha )   &
-                             + eps_por * lmmqp1 * sin( lmmqp1 * zz(iz) - malpha ) )
-            domgdy = - eps_rnew / r_major * (                                  &
-                     - ( sin( zz(iz) )                                         &
-                        + eps_hor * lprd   * sin( lmmq   * zz(iz) - malpha )   &
-                        + eps_mor * lprdm1 * sin( lmmqm1 * zz(iz) - malpha )   &
-                        + eps_por * lprdp1 * sin( lmmqp1 * zz(iz) - malpha )   &
-                     ) - (-1._DP/eps_r) * domgdz )
-            domgdx = eps_rnew / r_major * (                                    &
-                     - (                                                       &
-                          rdeps00                                              &
-                        + rdeps1_0 * cos( zz(iz) )                             &
-                        + rdeps2_10 * cos( lmmq   * zz(iz) - malpha )          &
-                        + rdeps1_10 * cos( lmmqm1 * zz(iz) - malpha )          &
-                        + rdeps3_10 * cos( lmmqp1 * zz(iz) - malpha )          &
-                        + s_hat * zz(iz) * ( sin( zz(iz) )                     &
-                        + eps_hor * lprd   * sin( lmmq   * zz(iz) - malpha )   &
-                        + eps_mor * lprdm1 * sin( lmmqm1 * zz(iz) - malpha )   &
-                        + eps_por * lprdp1 * sin( lmmqp1 * zz(iz) - malpha ) ) &
-                     ) - (-s_hat*zz(iz)/eps_r) * domgdz )
-            gg(1,1) = 1._DP
-            gg(1,2) = s_hat*zz(iz)
-            gg(1,3) = 0._DP
-            gg(2,1) = gg(1,2)
-            gg(2,2) = 1._DP + (s_hat*zz(iz))**2
-            gg(2,3) = 1._DP/(r_major*eps_r)
-            gg(3,1) = gg(1,3)
-            gg(3,2) = gg(2,3)
-            gg(3,3) = 1._DP/((r_major*eps_r)**2)
-            metric_l( 1,iz) = zz(iz)   ! [ 1]
-            metric_l( 2,iz) = theta    ! [ 2]
-            metric_l( 3,iz) = omg(iz)  ! [ 3]
-            metric_l( 4,iz) = domgdx   ! [ 4]
-            metric_l( 5,iz) = domgdy   ! [ 5]
-            metric_l( 6,iz) = domgdz   ! [ 6]
-            metric_l( 7,iz) = gg(1,1)  ! [ 7]
-            metric_l( 8,iz) = gg(1,2)  ! [ 8]
-            metric_l( 9,iz) = gg(1,3)  ! [ 9]
-            metric_l(10,iz) = gg(2,2)  ! [10]
-            metric_l(11,iz) = gg(2,3)  ! [11]
-            metric_l(12,iz) = gg(3,3)  ! [12]
-            metric_l(13,iz) = rootg(iz)! [13]
-           !-------------------------
-
-!!! for s-alpha !!! <--- the current version is the same as "analytic"
-          else if( trim(equib_type) == "s-alpha" .or. trim(equib_type) == "s-alpha-shift" ) then
-
-            q_bar = q_0
-            r_major = 1._DP ! in the R0 unit
-
-            if (trim(equib_type) == "s-alpha") then
-              !--- s-alpha model without Shafranov shift -
-              alpha_MHD = 0._DP
-            else if (trim(equib_type) == "s-alpha-shift") then
-              !--- s-alpha model with Shafranov shift ----
-              p_total = 0._DP
-              dp_totaldx = 0._DP
-              beta_total = 0._DP
-              do is = 0, ns-1
-                p_total = p_total + fcs(is) * tau(is) / Znum(is)
-                dp_totaldx = dp_totaldx - fcs(is) * tau(is) / Znum(is) * (R0_Ln(is) + R0_Lt(is))
-                beta_total = beta_total + 2._DP * beta * fcs(is) * tau(is) / Znum(is)
-              end do
-              alpha_MHD = - q_0**2 * r_major * beta_total * dp_totaldx / p_total
-            end if
-
-            theta = zz(iz)
-
-            omg(iz)   = 1._DP - eps_r * cos( theta )        ! s-alpha with eps-expansion
-            !omg(iz)   = 1._DP / (1._DP + eps_r * cos( theta )) ! for benchmark
-
-            rootg(iz) = q_0*r_major/omg(iz)
-
-            domgdz  = eps_r * sin( theta )
-            !domgdz  = eps_r * sin( theta ) * omg(iz)**2 ! for benchmark
-            domgdx  = -cos( theta ) / r_major
-            domgdy  = 0._DP
-
-            gg(1,1) = 1._DP
-            gg(1,2) = s_hat*zz(iz) - alpha_MHD*sin(zz(iz)) ! with Shafranov shift
-            gg(1,3) = 0._DP
-            gg(2,1) = gg(1,2)
-            gg(2,2) = 1._DP + (s_hat*zz(iz) - alpha_MHD*sin(zz(iz)))**2 ! with Shafranov shift
-            gg(2,3) = 1._DP/(r_major*eps_r)
-            gg(3,1) = gg(1,3)
-            gg(3,2) = gg(2,3)
-            gg(3,3) = 1._DP/((r_major*eps_r)**2)
-
-           !- for OUTPUT hst/*.mtr.* -
-            metric_l( 1,iz) = zz(iz)   ! [ 1]
-            metric_l( 2,iz) = theta    ! [ 2]
-            metric_l( 3,iz) = omg(iz)  ! [ 3]
-            metric_l( 4,iz) = domgdx   ! [ 4]
-            metric_l( 5,iz) = domgdy   ! [ 5]
-            metric_l( 6,iz) = domgdz   ! [ 6]
-            metric_l( 7,iz) = gg(1,1)  ! [ 7]
-            metric_l( 8,iz) = gg(1,2)  ! [ 8]
-            metric_l( 9,iz) = gg(1,3)  ! [ 9]
-            metric_l(10,iz) = gg(2,2)  ! [10]
-            metric_l(11,iz) = gg(2,3)  ! [11]
-            metric_l(12,iz) = gg(3,3)  ! [12]
-            metric_l(13,iz) = rootg(iz)! [13]
-           !-------------------------
-
-
-!!! for circular MHD equilibrium !!!
-          else if( trim(equib_type) == "circ-MHD" ) then
-
-            q_bar = dsqrt( 1._DP - eps_r**2 )*q_0
-            r_major = 1._DP ! in the R0 unit
-
-            theta = 2._DP*atan( sqrt( (1._DP+eps_r)/(1._DP-eps_r) ) &
-                              * tan(zz(iz)/2._DP) )
-
-            omg(iz)   = sqrt( q_bar**2 + eps_r**2 ) &
-                      / ( 1._DP + eps_r*cos( theta ) ) / q_bar
-
-            rootg(iz) = q_0*r_major*( 1._DP+eps_r*cos(theta) )**2
-
-            domgdz  = eps_r * sin(theta) * sqrt( q_bar**2 + eps_r**2 ) &
-                       / ( 1._DP + eps_r * cos( theta ) )**2           &
-                       / ( 1._DP - eps_r * cos( zz(iz)) ) / q_0
-
-            domgdx  = -( cos(theta)                                            &
-                         - eps_r*(1._DP-s_hat+eps_r**2*q_0**2/q_bar**2)        &
-                                *(1._DP+eps_r*cos(theta))/(q_bar**2+eps_r**2)  &
-                         - eps_r*sin(theta)**2/(1._DP-eps_r**2)                &
-                         ) / ((1._DP + eps_r*cos(theta))**2)                   &
-                           * sqrt(q_bar**2+eps_r**2) / q_bar / r_major
-
-            domgdy  = 0._DP
-
-            gg(1,1) = (q_0/q_bar)**2
-            gg(1,2) = ( s_hat*zz(iz)*q_0/q_bar - eps_r*sin(zz(iz))/(1._DP-eps_r**2) )*q_0/q_bar
-            gg(1,3) = - sin(zz(iz))/(1._DP-eps_r**2)/r_major*q_0/q_bar
-            gg(2,1) = gg(1,2)
-            gg(2,2) = (s_hat*zz(iz)*q_0/q_bar)**2 - 2._DP*q_0/q_bar*s_hat*zz(iz)*eps_r*sin(zz(iz))/(1._DP-eps_r**2) &
-                        + (q_bar**2+eps_r**2)/((1._DP+eps_r*cos(theta))**2)/(q_0**2)   &
-                        + (eps_r*sin(zz(iz)))**2/(1._DP-eps_r**2)**2
-            gg(2,3) = ( -s_hat*zz(iz)*q_0/q_bar*sin(zz(iz))/(1._DP-eps_r**2)           &
-                           + ((q_bar/q_0)**2)/((1._DP+eps_r*cos(theta))**2)/eps_r      &
-                           + eps_r*(sin(zz(iz))**2)/((1._DP-eps_r**2)**2)              &
-                         ) / r_major
-            gg(3,1) = gg(1,3)
-            gg(3,2) = gg(2,3)
-            gg(3,3) = ( ((q_bar/q_0)**2)/((1._DP+eps_r*cos(theta))**2)/(eps_r**2)  &
-                           + (sin(zz(iz))**2)/((1._DP-eps_r**2)**2)                &
-                         ) / (r_major**2)
-
-           !- for OUTPUT hst/*.mtr.* -
-            metric_l( 1,iz) = zz(iz)   ! [ 1]
-            metric_l( 2,iz) = theta    ! [ 2]
-            metric_l( 3,iz) = omg(iz)  ! [ 3]
-            metric_l( 4,iz) = domgdx   ! [ 4]
-            metric_l( 5,iz) = domgdy   ! [ 5]
-            metric_l( 6,iz) = domgdz   ! [ 6]
-            metric_l( 7,iz) = gg(1,1)  ! [ 7]
-            metric_l( 8,iz) = gg(1,2)  ! [ 8]
-            metric_l( 9,iz) = gg(1,3)  ! [ 9]
-            metric_l(10,iz) = gg(2,2)  ! [10]
-            metric_l(11,iz) = gg(2,3)  ! [11]
-            metric_l(12,iz) = gg(3,3)  ! [12]
-            metric_l(13,iz) = rootg(iz)! [13]
-           !-------------------------
-
-!  this is new vmec-BoozXform interface  by M. Nakata & M. Nunami  (Aug. 2016)
-          else if( trim(equib_type) == "vmec" ) then
-
-            q_bar = q_0
-            isw = 1
-            r_major = 1._DP ! in the R0 unit
-
-            call vmecbzx_boozx_coeff( isw,  nss,  ntheta,  nzeta,  s_input,     iz, zz(iz),  lz_l,   &  ! input 
-                                       s_0,       q_0,     s_hat,    eps_r, phi_ax,          &  ! output
-                                   omg(iz), rootg(iz),    domgdx,   domgdz, domgdy,          &
-                                   gg(1,1),   gg(1,2),   gg(1,3),  gg(2,2),                  &
-                                   gg(2,3),   gg(3,3)  )
-
-           !- for OUTPUT hst/*.mtr.* -
-            metric_l( 1,iz) = zz(iz)   ! [ 1]
-            metric_l( 2,iz) = phi_ax   ! [ 2] Axisymetric toroidal angle
-            metric_l( 3,iz) = omg(iz)  ! [ 3]
-            metric_l( 4,iz) = domgdx   ! [ 4]
-            metric_l( 5,iz) = domgdy   ! [ 5]
-            metric_l( 6,iz) = domgdz   ! [ 6]
-            metric_l( 7,iz) = gg(1,1)  ! [ 7]
-            metric_l( 8,iz) = gg(1,2)  ! [ 8]
-            metric_l( 9,iz) = gg(1,3)  ! [ 9]
-            metric_l(10,iz) = gg(2,2)  ! [10]
-            metric_l(11,iz) = gg(2,3)  ! [11]
-            metric_l(12,iz) = gg(3,3)  ! [12]
-            metric_l(13,iz) = rootg(iz)! [13]
-           !-------------------------
-
-
-          else if( trim(equib_type) == "eqdsk" ) then
-
-            q_bar = q_0
-            isw = 1
-            r_major = 1._DP ! in the R0 unit
-
-            call igs_coeff( isw,  mc_type,   nss,    ntheta,  s_input, zz(iz), lz_l, &  ! input 
-                                       s_0,       q_0,     s_hat,    eps_r,  theta,       &  ! output
-                                   omg(iz), rootg(iz),    domgdx,   domgdz, domgdy,       &
-                                   gg(1,1),   gg(1,2),   gg(1,3),  gg(2,2),               &
-                                   gg(2,3),   gg(3,3)  )
-
-           !- for OUTPUT hst/*.mtr.* -
-            metric_l( 1,iz) = zz(iz)   ! [ 1]
-            metric_l( 2,iz) = theta    ! [ 2]
-            metric_l( 3,iz) = omg(iz)  ! [ 3]
-            metric_l( 4,iz) = domgdx   ! [ 4]
-            metric_l( 5,iz) = domgdy   ! [ 5]
-            metric_l( 6,iz) = domgdz   ! [ 6]
-            metric_l( 7,iz) = gg(1,1)  ! [ 7]
-            metric_l( 8,iz) = gg(1,2)  ! [ 8]
-            metric_l( 9,iz) = gg(1,3)  ! [ 9]
-            metric_l(10,iz) = gg(2,2)  ! [10]
-            metric_l(11,iz) = gg(2,3)  ! [11]
-            metric_l(12,iz) = gg(3,3)  ! [12]
-            metric_l(13,iz) = rootg(iz)! [13]
-           !-------------------------
-
-
-          else
-
-            write( olog, * ) " # wrong choice of the equilibrium "
-            call flush(olog)
-            call MPI_Finalize(ierr_mpi)
-            stop
-
-          end if
-
-        end do   ! iz loop ends
-
-!- OUTPUT ascii data hst/*.mtr.* -
-        call MPI_gather(metric_l(1,-nz), num_omtr*2*nz, MPI_DOUBLE_PRECISION,        &
-                        metric_g(1,-global_nz), num_omtr*2*nz, MPI_DOUBLE_PRECISION, &
-                        0, zsp_comm_world, ierr_mpi)
-        if ( rankg == 0 ) then
-          do iz = -global_nz, global_nz-1
-            write( omtr, fmt="(f15.8,SP,256E24.14e3)") metric_g(:,iz)
-          end do
-          call flush(omtr)
-        end if
-!---------------------------------
-
-  END SUBROUTINE geom_init_metric_old
+!!--------------------------------------
+!  SUBROUTINE geom_init_metric_old
+!!--------------------------------------
+!    implicit none
+!    real(kind=DP) :: theta, domgdz, domgdx, domgdy
+!    real(kind=DP), dimension(1:3,1:3) :: gg
+!
+!    integer :: iz, is
+!    
+!
+!        do iz = -nz, nz-1
+!
+!!!! for slab model
+!          if ( trim(equib_type) == "slab") then
+!
+!            q_bar = q_0 
+!            r_major = 1._DP ! in the R0 unit
+!            theta = zz(iz)
+!
+!            omg(iz)   = 1._DP
+!            rootg(iz) = q_0*r_major
+!
+!           !- for OUTPUT hst/*.mtr.* -
+!            domgdz = 0._DP
+!            domgdy = 0._DP
+!            domgdx = 0._DP
+!            gg(1,1) = 1._DP
+!            gg(1,2) = 0._DP
+!            gg(1,3) = 0._DP
+!            gg(2,1) = gg(1,2)
+!            gg(2,2) = 1._DP
+!            gg(2,3) = 0._DP
+!            gg(3,1) = gg(1,3)
+!            gg(3,2) = gg(2,3)
+!            gg(3,3) = 1._DP
+!            metric_l( 1,iz) = zz(iz)   ! [ 1]
+!            metric_l( 2,iz) = theta    ! [ 2]
+!            metric_l( 3,iz) = omg(iz)  ! [ 3]
+!            metric_l( 4,iz) = domgdx   ! [ 4]
+!            metric_l( 5,iz) = domgdy   ! [ 5]
+!            metric_l( 6,iz) = domgdz   ! [ 6]
+!            metric_l( 7,iz) = gg(1,1)  ! [ 7]
+!            metric_l( 8,iz) = gg(1,2)  ! [ 8]
+!            metric_l( 9,iz) = gg(1,3)  ! [ 9]
+!            metric_l(10,iz) = gg(2,2)  ! [10]
+!            metric_l(11,iz) = gg(2,3)  ! [11]
+!            metric_l(12,iz) = gg(3,3)  ! [12]
+!            metric_l(13,iz) = rootg(iz)! [13]
+!           !-------------------------
+!
+!
+!!!! for the concentric and large-aspect-ratio model !!!
+!          else if( trim(equib_type) == "analytic" ) then
+!
+!            q_bar = q_0 
+!            r_major = 1._DP ! in the R0 unit
+!
+!            theta = zz(iz)
+!
+!            omg(iz)   = 1._DP                                             &
+!                      - eps_r * ( cos( zz(iz) )                           &
+!                              + eps_hor * cos( lmmq   * zz(iz) - malpha ) &
+!                              + eps_mor * cos( lmmqm1 * zz(iz) - malpha ) &
+!                              + eps_por * cos( lmmqp1 * zz(iz) - malpha ) )
+!
+!            rootg(iz) = q_0*r_major/omg(iz)
+!
+!           !- for OUTPUT hst/*.mtr.* - !%%% under benchmark %%%
+!            domgdz = eps_r * ( sin(zz(iz))                                          &
+!                             + eps_hor * lmmq   * sin( lmmq   * zz(iz) - malpha )   &
+!                             + eps_mor * lmmqm1 * sin( lmmqm1 * zz(iz) - malpha )   &
+!                             + eps_por * lmmqp1 * sin( lmmqp1 * zz(iz) - malpha ) )
+!            domgdy = - eps_rnew / r_major * (                                  &
+!                     - ( sin( zz(iz) )                                         &
+!                        + eps_hor * lprd   * sin( lmmq   * zz(iz) - malpha )   &
+!                        + eps_mor * lprdm1 * sin( lmmqm1 * zz(iz) - malpha )   &
+!                        + eps_por * lprdp1 * sin( lmmqp1 * zz(iz) - malpha )   &
+!                     ) - (-1._DP/eps_r) * domgdz )
+!            domgdx = eps_rnew / r_major * (                                    &
+!                     - (                                                       &
+!                          rdeps00                                              &
+!                        + rdeps1_0 * cos( zz(iz) )                             &
+!                        + rdeps2_10 * cos( lmmq   * zz(iz) - malpha )          &
+!                        + rdeps1_10 * cos( lmmqm1 * zz(iz) - malpha )          &
+!                        + rdeps3_10 * cos( lmmqp1 * zz(iz) - malpha )          &
+!                        + s_hat * zz(iz) * ( sin( zz(iz) )                     &
+!                        + eps_hor * lprd   * sin( lmmq   * zz(iz) - malpha )   &
+!                        + eps_mor * lprdm1 * sin( lmmqm1 * zz(iz) - malpha )   &
+!                        + eps_por * lprdp1 * sin( lmmqp1 * zz(iz) - malpha ) ) &
+!                     ) - (-s_hat*zz(iz)/eps_r) * domgdz )
+!            gg(1,1) = 1._DP
+!            gg(1,2) = s_hat*zz(iz)
+!            gg(1,3) = 0._DP
+!            gg(2,1) = gg(1,2)
+!            gg(2,2) = 1._DP + (s_hat*zz(iz))**2
+!            gg(2,3) = 1._DP/(r_major*eps_r)
+!            gg(3,1) = gg(1,3)
+!            gg(3,2) = gg(2,3)
+!            gg(3,3) = 1._DP/((r_major*eps_r)**2)
+!            metric_l( 1,iz) = zz(iz)   ! [ 1]
+!            metric_l( 2,iz) = theta    ! [ 2]
+!            metric_l( 3,iz) = omg(iz)  ! [ 3]
+!            metric_l( 4,iz) = domgdx   ! [ 4]
+!            metric_l( 5,iz) = domgdy   ! [ 5]
+!            metric_l( 6,iz) = domgdz   ! [ 6]
+!            metric_l( 7,iz) = gg(1,1)  ! [ 7]
+!            metric_l( 8,iz) = gg(1,2)  ! [ 8]
+!            metric_l( 9,iz) = gg(1,3)  ! [ 9]
+!            metric_l(10,iz) = gg(2,2)  ! [10]
+!            metric_l(11,iz) = gg(2,3)  ! [11]
+!            metric_l(12,iz) = gg(3,3)  ! [12]
+!            metric_l(13,iz) = rootg(iz)! [13]
+!           !-------------------------
+!
+!!!! for s-alpha !!! <--- the current version is the same as "analytic"
+!          else if( trim(equib_type) == "s-alpha" .or. trim(equib_type) == "s-alpha-shift" ) then
+!
+!            q_bar = q_0
+!            r_major = 1._DP ! in the R0 unit
+!
+!            if (trim(equib_type) == "s-alpha") then
+!              !--- s-alpha model without Shafranov shift -
+!              alpha_MHD = 0._DP
+!            else if (trim(equib_type) == "s-alpha-shift") then
+!              !--- s-alpha model with Shafranov shift ----
+!              p_total = 0._DP
+!              dp_totaldx = 0._DP
+!              beta_total = 0._DP
+!              do is = 0, ns-1
+!                p_total = p_total + fcs(is) * tau(is) / Znum(is)
+!                dp_totaldx = dp_totaldx - fcs(is) * tau(is) / Znum(is) * (R0_Ln(is) + R0_Lt(is))
+!                beta_total = beta_total + 2._DP * beta * fcs(is) * tau(is) / Znum(is)
+!              end do
+!              alpha_MHD = - q_0**2 * r_major * beta_total * dp_totaldx / p_total
+!            end if
+!
+!            theta = zz(iz)
+!
+!            omg(iz)   = 1._DP - eps_r * cos( theta )        ! s-alpha with eps-expansion
+!            !omg(iz)   = 1._DP / (1._DP + eps_r * cos( theta )) ! for benchmark
+!
+!            rootg(iz) = q_0*r_major/omg(iz)
+!
+!            domgdz  = eps_r * sin( theta )
+!            !domgdz  = eps_r * sin( theta ) * omg(iz)**2 ! for benchmark
+!            domgdx  = -cos( theta ) / r_major
+!            domgdy  = 0._DP
+!
+!            gg(1,1) = 1._DP
+!            gg(1,2) = s_hat*zz(iz) - alpha_MHD*sin(zz(iz)) ! with Shafranov shift
+!            gg(1,3) = 0._DP
+!            gg(2,1) = gg(1,2)
+!            gg(2,2) = 1._DP + (s_hat*zz(iz) - alpha_MHD*sin(zz(iz)))**2 ! with Shafranov shift
+!            gg(2,3) = 1._DP/(r_major*eps_r)
+!            gg(3,1) = gg(1,3)
+!            gg(3,2) = gg(2,3)
+!            gg(3,3) = 1._DP/((r_major*eps_r)**2)
+!
+!           !- for OUTPUT hst/*.mtr.* -
+!            metric_l( 1,iz) = zz(iz)   ! [ 1]
+!            metric_l( 2,iz) = theta    ! [ 2]
+!            metric_l( 3,iz) = omg(iz)  ! [ 3]
+!            metric_l( 4,iz) = domgdx   ! [ 4]
+!            metric_l( 5,iz) = domgdy   ! [ 5]
+!            metric_l( 6,iz) = domgdz   ! [ 6]
+!            metric_l( 7,iz) = gg(1,1)  ! [ 7]
+!            metric_l( 8,iz) = gg(1,2)  ! [ 8]
+!            metric_l( 9,iz) = gg(1,3)  ! [ 9]
+!            metric_l(10,iz) = gg(2,2)  ! [10]
+!            metric_l(11,iz) = gg(2,3)  ! [11]
+!            metric_l(12,iz) = gg(3,3)  ! [12]
+!            metric_l(13,iz) = rootg(iz)! [13]
+!           !-------------------------
+!
+!
+!!!! for circular MHD equilibrium !!!
+!          else if( trim(equib_type) == "circ-MHD" ) then
+!
+!            q_bar = dsqrt( 1._DP - eps_r**2 )*q_0
+!            r_major = 1._DP ! in the R0 unit
+!
+!            theta = 2._DP*atan( sqrt( (1._DP+eps_r)/(1._DP-eps_r) ) &
+!                              * tan(zz(iz)/2._DP) )
+!
+!            omg(iz)   = sqrt( q_bar**2 + eps_r**2 ) &
+!                      / ( 1._DP + eps_r*cos( theta ) ) / q_bar
+!
+!            rootg(iz) = q_0*r_major*( 1._DP+eps_r*cos(theta) )**2
+!
+!            domgdz  = eps_r * sin(theta) * sqrt( q_bar**2 + eps_r**2 ) &
+!                       / ( 1._DP + eps_r * cos( theta ) )**2           &
+!                       / ( 1._DP - eps_r * cos( zz(iz)) ) / q_0
+!
+!            domgdx  = -( cos(theta)                                            &
+!                         - eps_r*(1._DP-s_hat+eps_r**2*q_0**2/q_bar**2)        &
+!                                *(1._DP+eps_r*cos(theta))/(q_bar**2+eps_r**2)  &
+!                         - eps_r*sin(theta)**2/(1._DP-eps_r**2)                &
+!                         ) / ((1._DP + eps_r*cos(theta))**2)                   &
+!                           * sqrt(q_bar**2+eps_r**2) / q_bar / r_major
+!
+!            domgdy  = 0._DP
+!
+!            gg(1,1) = (q_0/q_bar)**2
+!            gg(1,2) = ( s_hat*zz(iz)*q_0/q_bar - eps_r*sin(zz(iz))/(1._DP-eps_r**2) )*q_0/q_bar
+!            gg(1,3) = - sin(zz(iz))/(1._DP-eps_r**2)/r_major*q_0/q_bar
+!            gg(2,1) = gg(1,2)
+!            gg(2,2) = (s_hat*zz(iz)*q_0/q_bar)**2 - 2._DP*q_0/q_bar*s_hat*zz(iz)*eps_r*sin(zz(iz))/(1._DP-eps_r**2) &
+!                        + (q_bar**2+eps_r**2)/((1._DP+eps_r*cos(theta))**2)/(q_0**2)   &
+!                        + (eps_r*sin(zz(iz)))**2/(1._DP-eps_r**2)**2
+!            gg(2,3) = ( -s_hat*zz(iz)*q_0/q_bar*sin(zz(iz))/(1._DP-eps_r**2)           &
+!                           + ((q_bar/q_0)**2)/((1._DP+eps_r*cos(theta))**2)/eps_r      &
+!                           + eps_r*(sin(zz(iz))**2)/((1._DP-eps_r**2)**2)              &
+!                         ) / r_major
+!            gg(3,1) = gg(1,3)
+!            gg(3,2) = gg(2,3)
+!            gg(3,3) = ( ((q_bar/q_0)**2)/((1._DP+eps_r*cos(theta))**2)/(eps_r**2)  &
+!                           + (sin(zz(iz))**2)/((1._DP-eps_r**2)**2)                &
+!                         ) / (r_major**2)
+!
+!           !- for OUTPUT hst/*.mtr.* -
+!            metric_l( 1,iz) = zz(iz)   ! [ 1]
+!            metric_l( 2,iz) = theta    ! [ 2]
+!            metric_l( 3,iz) = omg(iz)  ! [ 3]
+!            metric_l( 4,iz) = domgdx   ! [ 4]
+!            metric_l( 5,iz) = domgdy   ! [ 5]
+!            metric_l( 6,iz) = domgdz   ! [ 6]
+!            metric_l( 7,iz) = gg(1,1)  ! [ 7]
+!            metric_l( 8,iz) = gg(1,2)  ! [ 8]
+!            metric_l( 9,iz) = gg(1,3)  ! [ 9]
+!            metric_l(10,iz) = gg(2,2)  ! [10]
+!            metric_l(11,iz) = gg(2,3)  ! [11]
+!            metric_l(12,iz) = gg(3,3)  ! [12]
+!            metric_l(13,iz) = rootg(iz)! [13]
+!           !-------------------------
+!
+!!  this is new vmec-BoozXform interface  by M. Nakata & M. Nunami  (Aug. 2016)
+!          else if( trim(equib_type) == "vmec" ) then
+!
+!            q_bar = q_0
+!            isw = 1
+!            r_major = 1._DP ! in the R0 unit
+!
+!            call vmecbzx_boozx_coeff( isw,  nss,  ntheta,  nzeta,  s_input,     iz, zz(iz),  lz_l,   &  ! input 
+!                                       s_0,       q_0,     s_hat,    eps_r, phi_ax,          &  ! output
+!                                   omg(iz), rootg(iz),    domgdx,   domgdz, domgdy,          &
+!                                   gg(1,1),   gg(1,2),   gg(1,3),  gg(2,2),                  &
+!                                   gg(2,3),   gg(3,3)  )
+!
+!           !- for OUTPUT hst/*.mtr.* -
+!            metric_l( 1,iz) = zz(iz)   ! [ 1]
+!            metric_l( 2,iz) = phi_ax   ! [ 2] Axisymetric toroidal angle
+!            metric_l( 3,iz) = omg(iz)  ! [ 3]
+!            metric_l( 4,iz) = domgdx   ! [ 4]
+!            metric_l( 5,iz) = domgdy   ! [ 5]
+!            metric_l( 6,iz) = domgdz   ! [ 6]
+!            metric_l( 7,iz) = gg(1,1)  ! [ 7]
+!            metric_l( 8,iz) = gg(1,2)  ! [ 8]
+!            metric_l( 9,iz) = gg(1,3)  ! [ 9]
+!            metric_l(10,iz) = gg(2,2)  ! [10]
+!            metric_l(11,iz) = gg(2,3)  ! [11]
+!            metric_l(12,iz) = gg(3,3)  ! [12]
+!            metric_l(13,iz) = rootg(iz)! [13]
+!           !-------------------------
+!
+!
+!          else if( trim(equib_type) == "eqdsk" ) then
+!
+!            q_bar = q_0
+!            isw = 1
+!            r_major = 1._DP ! in the R0 unit
+!
+!            call igs_coeff( isw,  mc_type,   nss,    ntheta,  s_input, zz(iz), lz_l, &  ! input 
+!                                       s_0,       q_0,     s_hat,    eps_r,  theta,       &  ! output
+!                                   omg(iz), rootg(iz),    domgdx,   domgdz, domgdy,       &
+!                                   gg(1,1),   gg(1,2),   gg(1,3),  gg(2,2),               &
+!                                   gg(2,3),   gg(3,3)  )
+!
+!           !- for OUTPUT hst/*.mtr.* -
+!            metric_l( 1,iz) = zz(iz)   ! [ 1]
+!            metric_l( 2,iz) = theta    ! [ 2]
+!            metric_l( 3,iz) = omg(iz)  ! [ 3]
+!            metric_l( 4,iz) = domgdx   ! [ 4]
+!            metric_l( 5,iz) = domgdy   ! [ 5]
+!            metric_l( 6,iz) = domgdz   ! [ 6]
+!            metric_l( 7,iz) = gg(1,1)  ! [ 7]
+!            metric_l( 8,iz) = gg(1,2)  ! [ 8]
+!            metric_l( 9,iz) = gg(1,3)  ! [ 9]
+!            metric_l(10,iz) = gg(2,2)  ! [10]
+!            metric_l(11,iz) = gg(2,3)  ! [11]
+!            metric_l(12,iz) = gg(3,3)  ! [12]
+!            metric_l(13,iz) = rootg(iz)! [13]
+!           !-------------------------
+!
+!
+!          else
+!
+!            write( olog, * ) " # wrong choice of the equilibrium "
+!            call flush(olog)
+!            call MPI_Finalize(ierr_mpi)
+!            stop
+!
+!          end if
+!
+!        end do   ! iz loop ends
+!
+!!- OUTPUT ascii data hst/*.mtr.* -
+!        call MPI_gather(metric_l(1,-nz), num_omtr*2*nz, MPI_DOUBLE_PRECISION,        &
+!                        metric_g(1,-global_nz), num_omtr*2*nz, MPI_DOUBLE_PRECISION, &
+!                        0, zsp_comm_world, ierr_mpi)
+!        if ( rankg == 0 ) then
+!          do iz = -global_nz, global_nz-1
+!            write( omtr, fmt="(f15.8,SP,256E24.14e3)") metric_g(:,iz)
+!          end do
+!          call flush(omtr)
+!        end if
+!!---------------------------------
+!
+!  END SUBROUTINE geom_init_metric_old
 
 
 !--------------------------------------
@@ -817,8 +843,23 @@ CONTAINS
     real(kind=DP) :: gdomgdr, gdomgdt, gdomgdq, &
                      ggrr, ggrt, ggrq, ggtt, ggtq, ggqq, grootg_rtq
     integer :: iz, is
+!sakano_ring-dipole st 202303
+    real(kind=DP) :: ub_dot_grdb, ub_crs_grdb
+!sakano_ring-dipole end 202303
 
       s_hat_g = s_hat
+
+      !- zero clear -
+      gdomgdr = 0._DP
+      gdomgdt = 0._DP
+      gdomgdq = 0._DP
+      ggrr = 1._DP
+      ggrt = 0._DP
+      ggrq = 0._DP
+      ggtt = 1._DP
+      ggtq = 0._DP
+      ggqq = 1._DP
+      grootg_rtq = 1._DP
 
       do iz = -global_nz, global_nz-1
 
@@ -1136,6 +1177,43 @@ CONTAINS
           cy = cx*s_0/q_0
           cb = 1._DP
 
+!sakano_ring-dipole st 202303
+        else if( trim(equib_type) == "ring" ) then
+         !- Ring dipole geometry -
+         !  [Ref.] J. Sakano, Master thesis, Nagoya University (in Japanese).
+         !
+         !  Consider flux coordinates (Psi,Theta,phi), where the magnetic
+         !  poloidal flux Psi<0, the geometrical poloidal angle Theta = arctan(Z/(R-a)), 
+         !  the azimuthal angle of the cylindrical coordinate phi.
+         !  There is a ring current in direction of phi at R=a. The field line 
+         !  passing through (R,Z)=(R0,0) is picked up as a flux-tube domain.
+         !  
+         !  GKV coordinates (x,y,z) are (right-handed system)
+         !    x = cx*(Psi0 - Psi)/Psi0
+         !    y = cy*phi
+         !    z = Theta
+         !  with cx=R0, cy=R0. Note that Psi0 is the magnetic poloidal flux 
+         !  at the center of the considered flux-tube domain.
+         !  In these definitions, the factor on the magnetic field 
+         !  B = cb * \nabla x \times \nabla y is cb = Psi0/(R0*R0) = B0,
+         !  where B0 is the magnetic field strength at (R,Z)=(R0,0).
+         !  Normalized omg = B(z)/B0 and cb = 1 in the B0 unit.
+         !  The reference length is set to be R0 (not the ring current at R=a).
+         !  The normalized parameter to specify the flux-tube is 
+         !    ring_a = a / R0
+         !-
+          r_major = 1._DP ! in the R0 unit
+          q_bar   = 0._DP
+          theta = wzz
+          call ring_coordinates( ring_a, wzz, &                                ! input
+                                 gomg, ub_dot_grdb, ub_crs_grdb, ggxx, ggxy, & ! output
+                                 ggxz, ggyy, ggyz, ggzz, grootg_xyz, gdomgdx, gdomgdz )
+          gdomgdy = 0._DP
+          cx = 1._DP
+          cy = 1._DP
+          cb = 1._DP
+!sakano_ring-dipole end 202303
+
         else
 
           write( olog, * ) " # wrong choice of the equilibrium "
@@ -1150,10 +1228,10 @@ CONTAINS
                              ggxz, ggyy, ggyz, ggzz, grootg_xyz,    &
                              gdomgdr, gdomgdt, gdomgdq, ggrr, ggrt, &
                              ggrq, ggtt, ggtq, ggqq, grootg_rtq)
-        call mtr_global%xyz2rtq
 
       end do   ! iz loop ends
 
+      call mtr_global%xyz2rtq
       call mtr_fourier%init
       call mtr_fourier%dft_rtq2coef(mtr_global)
 
@@ -1161,8 +1239,7 @@ CONTAINS
 
       if ( rankg == 0 ) then
         do iz = -global_nz, global_nz-1
-          !write( omtr, fmt="(f15.8,SP,256E24.14e3)") &
-          write( 900000001, fmt="(f15.8,SP,256E24.14e3)") &
+          write( omtr, fmt="(f15.8,SP,256E24.14e3)") &
             mtr_global%zz(iz), mtr_global%theta(iz),      &
             mtr_global%omg(iz), mtr_global%domgdx(iz),    &
             mtr_global%domgdy(iz), mtr_global%domgdz(iz), &
@@ -1173,8 +1250,7 @@ CONTAINS
         end do
         !call flush(omtr)
         do iz = -global_nz, global_nz-1
-          !write( omtr, fmt="(f15.8,SP,256E24.14e3)") &
-          write( 900000002, fmt="(f15.8,SP,256E24.14e3)") &
+          write( omtf, fmt="(f15.8,SP,256E24.14e3)") &
             mtr_global%zz(iz), mtr_global%theta(iz),      &
             mtr_global%omg(iz), mtr_global%domgdr(iz),    &
             mtr_global%domgdt(iz), mtr_global%domgdq(iz), &
@@ -1185,536 +1261,524 @@ CONTAINS
         end do
         !call flush(omtr)
       end if
-
-
 
      !%%% For debug %%%
-      do iz = -nz, nz-1
-        write( 990000000+rankg, fmt="(f15.8,SP,256E24.14e3)") &
-          mtr_local%zz(iz), mtr_local%theta(iz),      &
-          mtr_local%omg(iz), mtr_local%domgdx(iz),    &
-          mtr_local%domgdy(iz), mtr_local%domgdz(iz), &
-          mtr_local%gxx(iz), mtr_local%gxy(iz),       &
-          mtr_local%gxz(iz), mtr_local%gyy(iz),       &
-          mtr_local%gyz(iz), mtr_local%gzz(iz),       &
-          mtr_local%rootg_xyz(iz)
-        write( 980000000+rankg, fmt="(f15.8,SP,256E24.14e3)") metric_l(:,iz)
-      end do
-
-      call mtr_global%rtq2xyz
-      !call mtr_global%xyz2rtq
-
-      call mtr_local%init(mtr_fourier, time_shearflow=0._DP)
-
-      if ( rankg == 0 ) then
-        do iz = -global_nz, global_nz-1
-          !write( omtr, fmt="(f15.8,SP,256E24.14e3)") &
-          write( 900000011, fmt="(f15.8,SP,256E24.14e3)") &
-            mtr_global%zz(iz), mtr_global%theta(iz),      &
-            mtr_global%omg(iz), mtr_global%domgdx(iz),    &
-            mtr_global%domgdy(iz), mtr_global%domgdz(iz), &
-            mtr_global%gxx(iz), mtr_global%gxy(iz),       &
-            mtr_global%gxz(iz), mtr_global%gyy(iz),       &
-            mtr_global%gyz(iz), mtr_global%gzz(iz),       &
-            mtr_global%rootg_xyz(iz)
-        end do
-        !call flush(omtr)
-        do iz = -global_nz, global_nz-1
-          !write( omtr, fmt="(f15.8,SP,256E24.14e3)") &
-          write( 900000012, fmt="(f15.8,SP,256E24.14e3)") &
-            mtr_global%zz(iz), mtr_global%theta(iz),      &
-            mtr_global%omg(iz), mtr_global%domgdr(iz),    &
-            mtr_global%domgdt(iz), mtr_global%domgdq(iz), &
-            mtr_global%grr(iz), mtr_global%grt(iz),       &
-            mtr_global%grq(iz), mtr_global%gtt(iz),       &
-            mtr_global%gtq(iz), mtr_global%gqq(iz),       &
-            mtr_global%rootg_rtq(iz)
-        end do
-        !call flush(omtr)
-      end if
-
-      do iz = -nz, nz-1
-        write( 970000000+rankg, fmt="(f15.8,SP,256E24.14e3)") &
-          mtr_local%zz(iz), mtr_local%theta(iz),      &
-          mtr_local%omg(iz), mtr_local%domgdx(iz),    &
-          mtr_local%domgdy(iz), mtr_local%domgdz(iz), &
-          mtr_local%gxx(iz), mtr_local%gxy(iz),       &
-          mtr_local%gxz(iz), mtr_local%gyy(iz),       &
-          mtr_local%gyz(iz), mtr_local%gzz(iz),       &
-          mtr_local%rootg_xyz(iz)
-      end do
-
-      do iz = -nz, nz-1
-        write( 900090000+rankg, fmt="(f15.8,SP,256E24.14e3)") &
-          mtr_local%zz_labframe(iz), mtr_local%theta(iz),      &
-          mtr_local%omg(iz), mtr_local%domgdr(iz),    &
-          mtr_local%domgdt(iz), mtr_local%domgdq(iz), &
-          mtr_local%grr(iz), mtr_local%grt(iz),       &
-          mtr_local%grq(iz), mtr_local%gtt(iz),       &
-          mtr_local%gtq(iz), mtr_local%gqq(iz),       &
-          mtr_local%rootg_rtq(iz)
-      end do
+     ! do iz = -nz, nz-1
+     !   write( 990000000+rankg, fmt="(f15.8,SP,256E24.14e3)") &
+     !     mtr_local%zz(iz), mtr_local%theta(iz),      &
+     !     mtr_local%omg(iz), mtr_local%domgdx(iz),    &
+     !     mtr_local%domgdy(iz), mtr_local%domgdz(iz), &
+     !     mtr_local%gxx(iz), mtr_local%gxy(iz),       &
+     !     mtr_local%gxz(iz), mtr_local%gyy(iz),       &
+     !     mtr_local%gyz(iz), mtr_local%gzz(iz),       &
+     !     mtr_local%rootg_xyz(iz)
+     ! end do
+     ! call mtr_global%rtq2xyz
+     ! call mtr_global%xyz2rtq
+     ! call mtr_local%init(mtr_fourier, time_shearflow=0._DP)
+     ! if ( rankg == 0 ) then
+     !   do iz = -global_nz, global_nz-1
+     !     write( 900000011, fmt="(f15.8,SP,256E24.14e3)") &
+     !       mtr_global%zz(iz), mtr_global%theta(iz),      &
+     !       mtr_global%omg(iz), mtr_global%domgdx(iz),    &
+     !       mtr_global%domgdy(iz), mtr_global%domgdz(iz), &
+     !       mtr_global%gxx(iz), mtr_global%gxy(iz),       &
+     !       mtr_global%gxz(iz), mtr_global%gyy(iz),       &
+     !       mtr_global%gyz(iz), mtr_global%gzz(iz),       &
+     !       mtr_global%rootg_xyz(iz)
+     !   end do
+     !   do iz = -global_nz, global_nz-1
+     !     write( 900000012, fmt="(f15.8,SP,256E24.14e3)") &
+     !       mtr_global%zz(iz), mtr_global%theta(iz),      &
+     !       mtr_global%omg(iz), mtr_global%domgdr(iz),    &
+     !       mtr_global%domgdt(iz), mtr_global%domgdq(iz), &
+     !       mtr_global%grr(iz), mtr_global%grt(iz),       &
+     !       mtr_global%grq(iz), mtr_global%gtt(iz),       &
+     !       mtr_global%gtq(iz), mtr_global%gqq(iz),       &
+     !       mtr_global%rootg_rtq(iz)
+     !   end do
+     ! end if
+     ! do iz = -nz, nz-1
+     !   write( 980000000+rankg, fmt="(f15.8,SP,256E24.14e3)") &
+     !     mtr_local%zz(iz), mtr_local%theta(iz),      &
+     !     mtr_local%omg(iz), mtr_local%domgdx(iz),    &
+     !     mtr_local%domgdy(iz), mtr_local%domgdz(iz), &
+     !     mtr_local%gxx(iz), mtr_local%gxy(iz),       &
+     !     mtr_local%gxz(iz), mtr_local%gyy(iz),       &
+     !     mtr_local%gyz(iz), mtr_local%gzz(iz),       &
+     !     mtr_local%rootg_xyz(iz)
+     ! end do
+     ! do iz = -nz, nz-1
+     !   write( 970000000+rankg, fmt="(f15.8,SP,256E24.14e3)") &
+     !     mtr_local%zz_labframe(iz), mtr_local%theta(iz),      &
+     !     mtr_local%omg(iz), mtr_local%domgdr(iz),    &
+     !     mtr_local%domgdt(iz), mtr_local%domgdq(iz), &
+     !     mtr_local%grr(iz), mtr_local%grt(iz),       &
+     !     mtr_local%grq(iz), mtr_local%gtt(iz),       &
+     !     mtr_local%gtq(iz), mtr_local%gqq(iz),       &
+     !     mtr_local%rootg_rtq(iz)
+     ! end do
      !%%%%%%%%%%%%%%%%%%
 
   END SUBROUTINE geom_init_metric
  
 
-!--------------------------------------
-  SUBROUTINE geom_set_operators_old
-!--------------------------------------
-    implicit none
-    real(kind=DP) :: kkx, kky, domgdz, domgdx, domgdy
-    real(kind=DP) :: bb, kmo
-    real(kind=DP) :: gg0
-
-    real(kind=DP) :: cfsrf_l
-    real(kind=DP), dimension(1:3,1:3) :: gg
-    complex(kind=DP), dimension(:,:,:,:,:), allocatable :: wf
-    complex(kind=DP), dimension(:,:,:), allocatable :: nw
-    real(kind=DP), dimension(:,:,:), allocatable :: ww
-
-
-    integer :: mx, my, iz, iv, im, is
-        do iz = -nz, nz-1
-
-          omg(iz)   = metric_l( 3,iz)
-          domgdx    = metric_l( 4,iz)
-          domgdy    = metric_l( 5,iz)
-          domgdz    = metric_l( 6,iz)
-          gg(1,1)   = metric_l( 7,iz)
-          gg(1,2)   = metric_l( 8,iz)
-          gg(1,3)   = metric_l( 9,iz)
-          gg(2,2)   = metric_l(10,iz)
-          gg(2,3)   = metric_l(11,iz)
-          gg(3,3)   = metric_l(12,iz)
-          rootg(iz) = metric_l(13,iz)
-
-!!! for slab model
-          if ( trim(equib_type) == "slab") then
-
-            dpara(iz) = dz * q_0 * r_major
-
-            do im = 0, nm
-              vp(iz,im)  = sqrt( 2._DP * mu(im) )!* omg(iz) )
-              mir(iz,im) = 0._DP
-              do iv = 1, 2*nv
-                vdx(iz,iv,im) = 0._DP
-                vdy(iz,iv,im) = 0._DP
-                vsy(iz,iv,im) =                                           &
-                  - sgn(ranks) * tau(ranks) / Znum(ranks)                 & 
-                  * ( R0_Ln(ranks) + R0_Lt(ranks) * ( 0.5_DP*vl(iv)**2    &
-                                           + omg(iz)*mu(im) - 1.5_DP ) )
-              end do
-            end do   ! im loop ends
-
-            ksq(:,:,iz) = 0._DP
-            do my = ist_y, iend_y
-              do mx = -nx, nx
-                ksq(mx,my,iz) = kx(mx)**2 + ky(my)**2
-              end do
-            end do
-
-!!! for the concentric and large-aspect-ratio model !!!
-          else if( trim(equib_type) == "analytic" ) then
-
-            dpara(iz) = dz * q_0 * r_major
-
-            do im = 0, nm
-
-              vp(iz,im)  = sqrt( 2._DP * mu(im) * omg(iz) )
-              mir(iz,im) = mu(im) * eps_r / ( q_0 * r_major )  &
-                       * ( sin(zz(iz))                                          &
-                         + eps_hor * lmmq   * sin( lmmq   * zz(iz) - malpha )   &
-                         + eps_mor * lmmqm1 * sin( lmmqm1 * zz(iz) - malpha )   &
-                         + eps_por * lmmqp1 * sin( lmmqp1 * zz(iz) - malpha ) )
-
-              do iv = 1, 2*nv
-                    vdx(iz,iv,im)=                                            &
-                      - ( vl(iv)**2 + omg(iz)*mu(im) ) * eps_rnew / r_major         &
-                      * ( 0._DP * ( rdeps00 + rdeps1_0 * cos( zz(iz) )             &
-                             + rdeps2_10 * cos( lmmq   * zz(iz) - malpha )          &
-                             + rdeps1_10 * cos( lmmqm1 * zz(iz) - malpha )          &
-                             + rdeps3_10 * cos( lmmqp1 * zz(iz) - malpha ) )        &
-                             + ( 1._DP + s_hat * zz(iz) * 0._DP )                 &
-                             * ( sin( zz(iz) )                                      &
-                             + eps_hor * lprd   * sin( lmmq   * zz(iz) - malpha )   &
-                             + eps_mor * lprdm1 * sin( lmmqm1 * zz(iz) - malpha )   &
-                             + eps_por * lprdp1 * sin( lmmqp1 * zz(iz) - malpha ) ) &
-                         ) * ( sgn(ranks) * tau(ranks) / Znum(ranks) )
-
-                    vdy(iz,iv,im)=                                            &
-                      - ( vl(iv)**2 + omg(iz)*mu(im) ) * eps_rnew / r_major         &
-                      * ( 1._DP * ( rdeps00 + rdeps1_0 * cos( zz(iz) )             &
-                             + rdeps2_10 * cos( lmmq   * zz(iz) - malpha )          &
-                             + rdeps1_10 * cos( lmmqm1 * zz(iz) - malpha )          &
-                             + rdeps3_10 * cos( lmmqp1 * zz(iz) - malpha ) )        &
-                             + ( 0._DP + s_hat * zz(iz) * 1._DP )                 &
-                             * ( sin( zz(iz) )                                      &
-                             + eps_hor * lprd   * sin( lmmq   * zz(iz) - malpha )   &
-                             + eps_mor * lprdm1 * sin( lmmqm1 * zz(iz) - malpha )   &
-                             + eps_por * lprdp1 * sin( lmmqp1 * zz(iz) - malpha ) ) &
-                         ) * ( sgn(ranks) * tau(ranks) / Znum(ranks) )
-
-                    vsy(iz,iv,im) =                                           &
-                      - sgn(ranks) * tau(ranks) / Znum(ranks)                 & 
-                      * ( R0_Ln(ranks) + R0_Lt(ranks) * ( 0.5_DP*vl(iv)**2    &
-                                               + omg(iz)*mu(im) - 1.5_DP ) )
-
-              end do
-
-            end do   ! im loop ends
-
-            ksq(:,:,iz) = 0._DP
-            do my = ist_y, iend_y
-              do mx = -nx, nx
-                ksq(mx,my,iz) = ( kx(mx) + s_hat * zz(iz) * ky(my) )**2 + ky(my)**2
-              end do
-            end do
-
-!!! for s-alpha !!! <--- the current version is the same as "analytic"
-          else if( trim(equib_type) == "s-alpha" .or. trim(equib_type) == "s-alpha-shift" ) then
-
-            dpara(iz) = dz* q_0 * r_major
-
-            kkx = -r_major * (q_0/q_bar) &
-                           * ( gg(1,1)*gg(2,3) - gg(1,2)*gg(1,3) )*domgdz
-            kky =  r_major * (q_bar/q_0) &
-                           * ( domgdx - ( gg(1,2)*gg(2,3) - gg(2,2)*gg(1,3) )*domgdz )
-
-            do im = 0, nm
-
-              vp(iz,im)  = sqrt( 2._DP * mu(im) * omg(iz) )
-
-              mir(iz,im) = mu(im) * (q_0/q_bar) * domgdz / ( omg(iz)*rootg(iz) )
-
-              do iv = 1, 2*nv
-                    vdx(iz,iv,im) =                                     &
-                       ( vl(iv)**2 + omg(iz)*mu(im) ) / r_major         &   
-                      * kkx                                             &
-                      * ( sgn(ranks) * tau(ranks) / Znum(ranks) )
-
-                    vdy(iz,iv,im) =                                     &
-                       ( vl(iv)**2 + omg(iz)*mu(im) ) / r_major         &   
-                      * kky                                             &
-                      * ( sgn(ranks) * tau(ranks) / Znum(ranks) )
-
-                    vsy(iz,iv,im) =                                           &
-                      - sgn(ranks) * tau(ranks) / Znum(ranks)                 &
-                      * ( R0_Ln(ranks) + R0_Lt(ranks) * ( 0.5_DP*vl(iv)**2    &
-                                               + omg(iz)*mu(im) - 1.5_DP ) )  &
-                      * (q_bar/q_0)
-              end do
-
-            end do   ! im loop ends
-
-
-            ksq(:,:,iz) = 0._DP
-            do my = ist_y, iend_y
-              do mx = -nx, nx
-                ksq(mx,my,iz) = ( kx(mx) + ( s_hat * zz(iz) - alpha_MHD*sin(zz(iz)) ) &
-                                * ky(my) )**2 + ky(my)**2 ! with Shafranov shift
-              end do
-            end do
-
-!!! for circular MHD equilibrium !!!
-          else if( trim(equib_type) == "circ-MHD" ) then
-
-            dpara(iz) = dz * omg(iz) * rootg(iz)
-
-            kkx =  r_major*( -domgdy + (gg(1,3)*gg(1,2) - gg(1,1)*gg(2,3))*domgdz/omg(iz)**2 )
-            kky =  r_major*(  domgdx + (gg(1,3)*gg(2,2) - gg(1,2)*gg(2,3))*domgdz/omg(iz)**2 )
-
-            do im = 0, nm
-
-              vp(iz,im)  = sqrt( 2._DP * mu(im) * omg(iz) )
-
-              mir(iz,im) = mu(im) * domgdz / ( omg(iz)*rootg(iz) )
-
-              do iv = 1, 2*nv
-                    vdx(iz,iv,im)=                                              &
-                       ( vl(iv)**2 + omg(iz)*mu(im) ) / ( r_major*omg(iz) )     &
-                      * kkx                                                     &
-                      * ( sgn(ranks) * tau(ranks) / Znum(ranks) )
-
-                    vdy(iz,iv,im)=                                              &
-                       ( vl(iv)**2 + omg(iz)*mu(im) ) / ( r_major*omg(iz) )     &
-                      * kky                                                     &
-                      * ( sgn(ranks) * tau(ranks) / Znum(ranks) )
-
-                    vsy(iz,iv,im) =                                           &
-                      - sgn(ranks) * tau(ranks) / Znum(ranks)                 &
-                      * ( R0_Ln(ranks) + R0_Lt(ranks) * ( 0.5_DP*vl(iv)**2    &
-                                               + omg(iz)*mu(im) - 1.5_DP ) )  
-              end do
-
-            end do   ! im loop ends
-
-            ksq(:,:,iz) = 0._DP
-            do my = ist_y, iend_y
-              do mx = -nx, nx
-                ksq(mx,my,iz) = (kx(mx)**2)*gg(1,1)         &
-                              + 2._DP*kx(mx)*ky(my)*gg(1,2) &
-                              + (ky(my)**2)*gg(2,2)
-              end do
-            end do
-
-!  this is new vmec-BoozXform interface  by M. Nakata & M. Nunami  (Aug. 2016)
-          else if( trim(equib_type) == "vmec" ) then
-
-            dpara(iz) = dz * omg(iz) * rootg(iz)
-
-            kkx =  r_major*( -domgdy + (gg(1,3)*gg(1,2) - gg(1,1)*gg(2,3))*domgdz/omg(iz)**2 )
-            kky =  r_major*(  domgdx + (gg(1,3)*gg(2,2) - gg(1,2)*gg(2,3))*domgdz/omg(iz)**2 )
-
-            do im = 0, nm
-
-              vp(iz,im)  = sqrt( 2._DP * mu(im) * omg(iz) )
-
-              mir(iz,im) = mu(im) * domgdz / ( omg(iz)*rootg(iz) )
-
-              do iv = 1, 2*nv
-                    vdx(iz,iv,im) =                                              &
-                       ( vl(iv)**2 + omg(iz)*mu(im) ) / ( r_major*omg(iz) )      &
-                      * kkx                                                      &
-                      * ( sgn(ranks) * tau(ranks) / Znum(ranks) )
-
-
-                    vdy(iz,iv,im) =                                              &
-                       ( vl(iv)**2 + omg(iz)*mu(im) ) / ( r_major*omg(iz) )      &
-                      * kky                                                      &
-                      * ( sgn(ranks) * tau(ranks) / Znum(ranks) )                &
-                     - real(ibprime,kind=DP) * vl(iv)**2 / r_major / omg(iz)**2  & ! grad-p (beta-prime) term 
-                      * ( beta*(R0_Ln(ranks) + R0_Lt(ranks)) )                   &
-                      * ( sgn(ranks) * tau(ranks) / Znum(ranks) )
-
-                    vsy(iz,iv,im) =                                           &
-                      - sgn(ranks) * tau(ranks) / Znum(ranks)                 &
-                      * ( R0_Ln(ranks) + R0_Lt(ranks) * ( 0.5_DP*vl(iv)**2    &
-                                               + omg(iz)*mu(im) - 1.5_DP ) )  
-              end do
-
-            end do   ! im loop ends
-
-            ksq(:,:,iz) = 0._DP
-            do my = ist_y, iend_y
-              do mx = -nx, nx
-                ksq(mx,my,iz) = (kx(mx)**2)*gg(1,1)         &
-                              + 2._DP*kx(mx)*ky(my)*gg(1,2) &
-                              + (ky(my)**2)*gg(2,2)
-              end do
-            end do
-
-          else if( trim(equib_type) == "eqdsk" ) then
-
-            dpara(iz) = dz * omg(iz) * rootg(iz)
-
-            kkx =  r_major*( -domgdy + (gg(1,3)*gg(1,2) - gg(1,1)*gg(2,3))*domgdz/omg(iz)**2 )
-            kky =  r_major*(  domgdx + (gg(1,3)*gg(2,2) - gg(1,2)*gg(2,3))*domgdz/omg(iz)**2 )
-
-            do im = 0, nm
-
-              vp(iz,im)  = sqrt( 2._DP * mu(im) * omg(iz) )
-
-              mir(iz,im) = mu(im) * domgdz / ( omg(iz)*rootg(iz) )
-
-              do iv = 1, 2*nv
-                    vdx(iz,iv,im) =                                              &
-                       ( vl(iv)**2 + omg(iz)*mu(im) ) / ( r_major*omg(iz) )      &
-                      * kkx                                                      &
-                      * ( sgn(ranks) * tau(ranks) / Znum(ranks) )
-
-                    vdy(iz,iv,im) =                                              &
-                       ( vl(iv)**2 + omg(iz)*mu(im) ) / ( r_major*omg(iz) )      &
-                      * kky                                                      &
-                      * ( sgn(ranks) * tau(ranks) / Znum(ranks) )                &
-                     - real(ibprime,kind=DP) * vl(iv)**2 / r_major / omg(iz)**2  & ! grad-p (beta-prime) term 
-                      * ( beta*(R0_Ln(ranks) + R0_Lt(ranks)) )                   &
-                      * ( sgn(ranks) * tau(ranks) / Znum(ranks) )
-
-                    vsy(iz,iv,im) =                                           &
-                      - sgn(ranks) * tau(ranks) / Znum(ranks)                 &
-                      * ( R0_Ln(ranks) + R0_Lt(ranks) * ( 0.5_DP*vl(iv)**2    &
-                                               + omg(iz)*mu(im) - 1.5_DP ) )  
-              end do
-
-            end do   ! im loop ends
-
-            ksq(:,:,iz) = 0._DP
-            do my = ist_y, iend_y
-              do mx = -nx, nx
-                ksq(mx,my,iz) = (kx(mx)**2)*gg(1,1)         &
-                              + 2._DP*kx(mx)*ky(my)*gg(1,2) &
-                              + (ky(my)**2)*gg(2,2)
-              end do
-            end do
-
-          else
-
-            write( olog, * ) " # wrong choice of the equilibrium "
-            call flush(olog)
-            call MPI_Finalize(ierr_mpi)
-            stop
-
-          end if
-
-
-          do im = 0, nm
-            do my = ist_y, iend_y
-              do mx = -nx, nx
-                kmo           = sqrt( 2._DP * ksq(mx,my,iz) * mu(im) / omg(iz) ) &
-                               * dsqrt( tau(ranks)*Anum(ranks) ) / Znum(ranks)
-                call math_j0( kmo, j0(mx,my,iz,im) )
-                call math_j1( kmo, j1(mx,my,iz,im) )
-                call math_j2( kmo, j2(mx,my,iz,im) )
-              end do
-            end do
-          end do
-
-
-          do my = ist_y, iend_y
-            do mx = -nx, nx
-              bb     = ksq(mx,my,iz) / omg(iz)**2 &
-                        * tau(ranks)*Anum(ranks)/(Znum(ranks)**2)
-              call math_g0( bb, g0(mx,my,iz) )
-            end do
-          end do
-
-        end do   ! iz loop ends
-
-        cfsrf   = 0._DP
-        cfsrf_l = 0._DP
-        do iz = -nz, nz-1
-          cfsrf_l   = cfsrf_l + rootg(iz)
-                                            ! normalization coefficient for 
-                                            ! the surface average
-        end do
-        call MPI_Allreduce( cfsrf_l, cfsrf, 1, MPI_DOUBLE_PRECISION, &
-                            MPI_SUM, zsp_comm_world, ierr_mpi )
-
-        if ( vel_rank == 0 ) then
-          do iz = -nz, nz-1
-            dvp(iz)  = sqrt( 2._DP * (0.5_DP * dm**2) * omg(iz) )
-          end do
-        end if
-        call MPI_Bcast( dvp, 2*nz, MPI_DOUBLE_PRECISION, 0, &
-                        vel_comm_world, ierr_mpi )
-
-        do im = 0, nm
-          do iv = 1, 2*nv
-            do iz = -nz, nz-1
-              fmx(iz,iv,im)   = exp( - 0.5_DP * vl(iv)**2 - omg(iz) * mu(im) ) &
-                              / sqrt( twopi**3 )
-            end do
-          end do
-        end do
-
-        allocate( ww(-nx:nx,0:ny,-nz:nz-1) )
-
-! --- GK polarization factor for efield calculation 
-        fct_poisson(:,:,:) = 0._DP
-        fct_e_energy(:,:,:) = 0._DP
-
-        ww(:,:,:) = 0._DP
-        do iz = -nz, nz-1
-          do my = ist_y, iend_y
-            do mx = -nx, nx
-
-              if ( rankw == 0 .and. mx == 0 .and. my == 0 ) then !- (0,0) mode
-
-                fct_poisson(mx,my,iz) = 0._DP
-                fct_e_energy(mx,my,iz) = 0._DP
-
-              else
-
-                ww(mx,my,iz) = lambda_i * ksq(mx,my,iz)
-                do is = 0, ns-1
-                  bb   = ksq(mx,my,iz) / omg(iz)**2 &
-                          * tau(is)*Anum(is)/(Znum(is)**2)
-                  call math_g0( bb, gg0 )
-                  ww(mx,my,iz) = ww(mx,my,iz)  &
-                               + Znum(is) * fcs(is) / tau(is) * ( 1._DP - gg0 )
-                end do
-                fct_poisson(mx,my,iz) = 1._DP / ww(mx,my,iz)
-                fct_e_energy(mx,my,iz) = ww(mx,my,iz)
-
-              end if
-
-            end do
-          end do
-        end do
-
-
-! --- ZF-factor for adiabatic model
-        if ( ns == 1 ) then
-
-          ww(:,:,:) = 0._DP
-          do iz = -nz, nz-1
-            my = 0
-              do mx = -nx, nx
-                ww(mx,my,iz) = ( 1._DP - g0(mx,my,iz) )       &
-                             / ( 1._DP - g0(mx,my,iz) + tau(0)*tau_ad )
-              end do
-          end do
-
-          call intgrl_fsrf ( ww, fctgt )
-
-          if ( rankw == 0 )  then
-            fctgt(0)   = ( 1._DP - g0(0,0,0) ) / ( 1._DP - g0(0,0,0) + tau(0)*tau_ad )
-                                              ! g0(0,0,iz) has no z dependence
-          endif
-
-        endif
-
-        deallocate( ww )
-
-        allocate( wf(-nx:nx,0:ny,-nz:nz-1,1:2*nv,0:nm) )
-        allocate( nw(-nx:nx,0:ny,-nz:nz-1) )
-        wf(:,:,:,:,:) = ( 0._DP, 0._DP )
-        nw(:,:,:) = ( 0._DP, 0._DP )
-
-! --- GK polarization factor for mfield calculation 
-        fct_ampere(:,:,:) = 0._DP
-        fct_m_energy(:,:,:) = 0._DP
-
-        if ( beta .ne. 0._DP ) then
-       
-          do im = 0, nm
-            do iv = 1, 2*nv
-              do iz = -nz, nz-1
-                do my = ist_y, iend_y
-                  do mx = -nx, nx
-                    wf(mx,my,iz,iv,im) = Znum(ranks) * fcs(ranks) / Anum(ranks)  &
-                                       * vl(iv)**2 * j0(mx,my,iz,im)**2 * fmx(iz,iv,im)
-                  end do
-                end do
-              end do
-            end do
-          end do
-  
-          call intgrl_v0_moment_ms ( wf, nw )
-  
-          do iz = -nz, nz-1
-            do my = ist_y, iend_y
-              do mx = -nx, nx
-                fct_ampere(mx,my,iz) = 1._DP / real( ksq(mx,my,iz) + beta * nw(mx,my,iz), kind=DP )
-                fct_m_energy(mx,my,iz) = ksq(mx,my,iz) / beta
-              end do
-            end do
-          end do
-  
-          if ( rankw == 0 ) then
-            do iz = -nz, nz-1
-              fct_ampere(0,0,iz) = 0._DP
-              fct_m_energy(0,0,iz) = 0._DP
-            end do
-          end if
-
-        end if
-
-        deallocate( wf )
-        deallocate( nw )
-
-  END SUBROUTINE geom_set_operators_old
+!!--------------------------------------
+!  SUBROUTINE geom_set_operators_old
+!!--------------------------------------
+!    implicit none
+!    real(kind=DP) :: kkx, kky, domgdz, domgdx, domgdy
+!    real(kind=DP) :: bb, kmo
+!    real(kind=DP) :: gg0
+!
+!    real(kind=DP) :: cfsrf_l
+!    real(kind=DP), dimension(1:3,1:3) :: gg
+!    complex(kind=DP), dimension(:,:,:,:,:), allocatable :: wf
+!    complex(kind=DP), dimension(:,:,:), allocatable :: nw
+!    real(kind=DP), dimension(:,:,:), allocatable :: ww
+!
+!
+!    integer :: mx, my, iz, iv, im, is
+!        do iz = -nz, nz-1
+!
+!          omg(iz)   = metric_l( 3,iz)
+!          domgdx    = metric_l( 4,iz)
+!          domgdy    = metric_l( 5,iz)
+!          domgdz    = metric_l( 6,iz)
+!          gg(1,1)   = metric_l( 7,iz)
+!          gg(1,2)   = metric_l( 8,iz)
+!          gg(1,3)   = metric_l( 9,iz)
+!          gg(2,2)   = metric_l(10,iz)
+!          gg(2,3)   = metric_l(11,iz)
+!          gg(3,3)   = metric_l(12,iz)
+!          rootg(iz) = metric_l(13,iz)
+!
+!!!! for slab model
+!          if ( trim(equib_type) == "slab") then
+!
+!            dpara(iz) = dz * q_0 * r_major
+!
+!            do im = 0, nm
+!              vp(iz,im)  = sqrt( 2._DP * mu(im) )!* omg(iz) )
+!              mir(iz,im) = 0._DP
+!              do iv = 1, 2*nv
+!                vdx(iz,iv,im) = 0._DP
+!                vdy(iz,iv,im) = 0._DP
+!                vsy(iz,iv,im) =                                           &
+!                  - sgn(ranks) * tau(ranks) / Znum(ranks)                 & 
+!                  * ( R0_Ln(ranks) + R0_Lt(ranks) * ( 0.5_DP*vl(iv)**2    &
+!                                           + omg(iz)*mu(im) - 1.5_DP ) )
+!              end do
+!            end do   ! im loop ends
+!
+!            ksq(:,:,iz) = 0._DP
+!            do my = ist_y, iend_y
+!              do mx = -nx, nx
+!                ksq(mx,my,iz) = kx(mx)**2 + ky(my)**2
+!              end do
+!            end do
+!
+!!!! for the concentric and large-aspect-ratio model !!!
+!          else if( trim(equib_type) == "analytic" ) then
+!
+!            dpara(iz) = dz * q_0 * r_major
+!
+!            do im = 0, nm
+!
+!              vp(iz,im)  = sqrt( 2._DP * mu(im) * omg(iz) )
+!              mir(iz,im) = mu(im) * eps_r / ( q_0 * r_major )  &
+!                       * ( sin(zz(iz))                                          &
+!                         + eps_hor * lmmq   * sin( lmmq   * zz(iz) - malpha )   &
+!                         + eps_mor * lmmqm1 * sin( lmmqm1 * zz(iz) - malpha )   &
+!                         + eps_por * lmmqp1 * sin( lmmqp1 * zz(iz) - malpha ) )
+!
+!              do iv = 1, 2*nv
+!                    vdx(iz,iv,im)=                                            &
+!                      - ( vl(iv)**2 + omg(iz)*mu(im) ) * eps_rnew / r_major         &
+!                      * ( 0._DP * ( rdeps00 + rdeps1_0 * cos( zz(iz) )             &
+!                             + rdeps2_10 * cos( lmmq   * zz(iz) - malpha )          &
+!                             + rdeps1_10 * cos( lmmqm1 * zz(iz) - malpha )          &
+!                             + rdeps3_10 * cos( lmmqp1 * zz(iz) - malpha ) )        &
+!                             + ( 1._DP + s_hat * zz(iz) * 0._DP )                 &
+!                             * ( sin( zz(iz) )                                      &
+!                             + eps_hor * lprd   * sin( lmmq   * zz(iz) - malpha )   &
+!                             + eps_mor * lprdm1 * sin( lmmqm1 * zz(iz) - malpha )   &
+!                             + eps_por * lprdp1 * sin( lmmqp1 * zz(iz) - malpha ) ) &
+!                         ) * ( sgn(ranks) * tau(ranks) / Znum(ranks) )
+!
+!                    vdy(iz,iv,im)=                                            &
+!                      - ( vl(iv)**2 + omg(iz)*mu(im) ) * eps_rnew / r_major         &
+!                      * ( 1._DP * ( rdeps00 + rdeps1_0 * cos( zz(iz) )             &
+!                             + rdeps2_10 * cos( lmmq   * zz(iz) - malpha )          &
+!                             + rdeps1_10 * cos( lmmqm1 * zz(iz) - malpha )          &
+!                             + rdeps3_10 * cos( lmmqp1 * zz(iz) - malpha ) )        &
+!                             + ( 0._DP + s_hat * zz(iz) * 1._DP )                 &
+!                             * ( sin( zz(iz) )                                      &
+!                             + eps_hor * lprd   * sin( lmmq   * zz(iz) - malpha )   &
+!                             + eps_mor * lprdm1 * sin( lmmqm1 * zz(iz) - malpha )   &
+!                             + eps_por * lprdp1 * sin( lmmqp1 * zz(iz) - malpha ) ) &
+!                         ) * ( sgn(ranks) * tau(ranks) / Znum(ranks) )
+!
+!                    vsy(iz,iv,im) =                                           &
+!                      - sgn(ranks) * tau(ranks) / Znum(ranks)                 & 
+!                      * ( R0_Ln(ranks) + R0_Lt(ranks) * ( 0.5_DP*vl(iv)**2    &
+!                                               + omg(iz)*mu(im) - 1.5_DP ) )
+!
+!              end do
+!
+!            end do   ! im loop ends
+!
+!            ksq(:,:,iz) = 0._DP
+!            do my = ist_y, iend_y
+!              do mx = -nx, nx
+!                ksq(mx,my,iz) = ( kx(mx) + s_hat * zz(iz) * ky(my) )**2 + ky(my)**2
+!              end do
+!            end do
+!
+!!!! for s-alpha !!! <--- the current version is the same as "analytic"
+!          else if( trim(equib_type) == "s-alpha" .or. trim(equib_type) == "s-alpha-shift" ) then
+!
+!            dpara(iz) = dz* q_0 * r_major
+!
+!            kkx = -r_major * (q_0/q_bar) &
+!                           * ( gg(1,1)*gg(2,3) - gg(1,2)*gg(1,3) )*domgdz
+!            kky =  r_major * (q_bar/q_0) &
+!                           * ( domgdx - ( gg(1,2)*gg(2,3) - gg(2,2)*gg(1,3) )*domgdz )
+!
+!            do im = 0, nm
+!
+!              vp(iz,im)  = sqrt( 2._DP * mu(im) * omg(iz) )
+!
+!              mir(iz,im) = mu(im) * (q_0/q_bar) * domgdz / ( omg(iz)*rootg(iz) )
+!
+!              do iv = 1, 2*nv
+!                    vdx(iz,iv,im) =                                     &
+!                       ( vl(iv)**2 + omg(iz)*mu(im) ) / r_major         &   
+!                      * kkx                                             &
+!                      * ( sgn(ranks) * tau(ranks) / Znum(ranks) )
+!
+!                    vdy(iz,iv,im) =                                     &
+!                       ( vl(iv)**2 + omg(iz)*mu(im) ) / r_major         &   
+!                      * kky                                             &
+!                      * ( sgn(ranks) * tau(ranks) / Znum(ranks) )
+!
+!                    vsy(iz,iv,im) =                                           &
+!                      - sgn(ranks) * tau(ranks) / Znum(ranks)                 &
+!                      * ( R0_Ln(ranks) + R0_Lt(ranks) * ( 0.5_DP*vl(iv)**2    &
+!                                               + omg(iz)*mu(im) - 1.5_DP ) )  &
+!                      * (q_bar/q_0)
+!              end do
+!
+!            end do   ! im loop ends
+!
+!
+!            ksq(:,:,iz) = 0._DP
+!            do my = ist_y, iend_y
+!              do mx = -nx, nx
+!                ksq(mx,my,iz) = ( kx(mx) + ( s_hat * zz(iz) - alpha_MHD*sin(zz(iz)) ) &
+!                                * ky(my) )**2 + ky(my)**2 ! with Shafranov shift
+!              end do
+!            end do
+!
+!!!! for circular MHD equilibrium !!!
+!          else if( trim(equib_type) == "circ-MHD" ) then
+!
+!            dpara(iz) = dz * omg(iz) * rootg(iz)
+!
+!            kkx =  r_major*( -domgdy + (gg(1,3)*gg(1,2) - gg(1,1)*gg(2,3))*domgdz/omg(iz)**2 )
+!            kky =  r_major*(  domgdx + (gg(1,3)*gg(2,2) - gg(1,2)*gg(2,3))*domgdz/omg(iz)**2 )
+!
+!            do im = 0, nm
+!
+!              vp(iz,im)  = sqrt( 2._DP * mu(im) * omg(iz) )
+!
+!              mir(iz,im) = mu(im) * domgdz / ( omg(iz)*rootg(iz) )
+!
+!              do iv = 1, 2*nv
+!                    vdx(iz,iv,im)=                                              &
+!                       ( vl(iv)**2 + omg(iz)*mu(im) ) / ( r_major*omg(iz) )     &
+!                      * kkx                                                     &
+!                      * ( sgn(ranks) * tau(ranks) / Znum(ranks) )
+!
+!                    vdy(iz,iv,im)=                                              &
+!                       ( vl(iv)**2 + omg(iz)*mu(im) ) / ( r_major*omg(iz) )     &
+!                      * kky                                                     &
+!                      * ( sgn(ranks) * tau(ranks) / Znum(ranks) )
+!
+!                    vsy(iz,iv,im) =                                           &
+!                      - sgn(ranks) * tau(ranks) / Znum(ranks)                 &
+!                      * ( R0_Ln(ranks) + R0_Lt(ranks) * ( 0.5_DP*vl(iv)**2    &
+!                                               + omg(iz)*mu(im) - 1.5_DP ) )  
+!              end do
+!
+!            end do   ! im loop ends
+!
+!            ksq(:,:,iz) = 0._DP
+!            do my = ist_y, iend_y
+!              do mx = -nx, nx
+!                ksq(mx,my,iz) = (kx(mx)**2)*gg(1,1)         &
+!                              + 2._DP*kx(mx)*ky(my)*gg(1,2) &
+!                              + (ky(my)**2)*gg(2,2)
+!              end do
+!            end do
+!
+!!  this is new vmec-BoozXform interface  by M. Nakata & M. Nunami  (Aug. 2016)
+!          else if( trim(equib_type) == "vmec" ) then
+!
+!            dpara(iz) = dz * omg(iz) * rootg(iz)
+!
+!            kkx =  r_major*( -domgdy + (gg(1,3)*gg(1,2) - gg(1,1)*gg(2,3))*domgdz/omg(iz)**2 )
+!            kky =  r_major*(  domgdx + (gg(1,3)*gg(2,2) - gg(1,2)*gg(2,3))*domgdz/omg(iz)**2 )
+!
+!            do im = 0, nm
+!
+!              vp(iz,im)  = sqrt( 2._DP * mu(im) * omg(iz) )
+!
+!              mir(iz,im) = mu(im) * domgdz / ( omg(iz)*rootg(iz) )
+!
+!              do iv = 1, 2*nv
+!                    vdx(iz,iv,im) =                                              &
+!                       ( vl(iv)**2 + omg(iz)*mu(im) ) / ( r_major*omg(iz) )      &
+!                      * kkx                                                      &
+!                      * ( sgn(ranks) * tau(ranks) / Znum(ranks) )
+!
+!
+!                    vdy(iz,iv,im) =                                              &
+!                       ( vl(iv)**2 + omg(iz)*mu(im) ) / ( r_major*omg(iz) )      &
+!                      * kky                                                      &
+!                      * ( sgn(ranks) * tau(ranks) / Znum(ranks) )                &
+!                     - real(ibprime,kind=DP) * vl(iv)**2 / r_major / omg(iz)**2  & ! grad-p (beta-prime) term 
+!                      * ( beta*(R0_Ln(ranks) + R0_Lt(ranks)) )                   &
+!                      * ( sgn(ranks) * tau(ranks) / Znum(ranks) )
+!
+!                    vsy(iz,iv,im) =                                           &
+!                      - sgn(ranks) * tau(ranks) / Znum(ranks)                 &
+!                      * ( R0_Ln(ranks) + R0_Lt(ranks) * ( 0.5_DP*vl(iv)**2    &
+!                                               + omg(iz)*mu(im) - 1.5_DP ) )  
+!              end do
+!
+!            end do   ! im loop ends
+!
+!            ksq(:,:,iz) = 0._DP
+!            do my = ist_y, iend_y
+!              do mx = -nx, nx
+!                ksq(mx,my,iz) = (kx(mx)**2)*gg(1,1)         &
+!                              + 2._DP*kx(mx)*ky(my)*gg(1,2) &
+!                              + (ky(my)**2)*gg(2,2)
+!              end do
+!            end do
+!
+!          else if( trim(equib_type) == "eqdsk" ) then
+!
+!            dpara(iz) = dz * omg(iz) * rootg(iz)
+!
+!            kkx =  r_major*( -domgdy + (gg(1,3)*gg(1,2) - gg(1,1)*gg(2,3))*domgdz/omg(iz)**2 )
+!            kky =  r_major*(  domgdx + (gg(1,3)*gg(2,2) - gg(1,2)*gg(2,3))*domgdz/omg(iz)**2 )
+!
+!            do im = 0, nm
+!
+!              vp(iz,im)  = sqrt( 2._DP * mu(im) * omg(iz) )
+!
+!              mir(iz,im) = mu(im) * domgdz / ( omg(iz)*rootg(iz) )
+!
+!              do iv = 1, 2*nv
+!                    vdx(iz,iv,im) =                                              &
+!                       ( vl(iv)**2 + omg(iz)*mu(im) ) / ( r_major*omg(iz) )      &
+!                      * kkx                                                      &
+!                      * ( sgn(ranks) * tau(ranks) / Znum(ranks) )
+!
+!                    vdy(iz,iv,im) =                                              &
+!                       ( vl(iv)**2 + omg(iz)*mu(im) ) / ( r_major*omg(iz) )      &
+!                      * kky                                                      &
+!                      * ( sgn(ranks) * tau(ranks) / Znum(ranks) )                &
+!                     - real(ibprime,kind=DP) * vl(iv)**2 / r_major / omg(iz)**2  & ! grad-p (beta-prime) term 
+!                      * ( beta*(R0_Ln(ranks) + R0_Lt(ranks)) )                   &
+!                      * ( sgn(ranks) * tau(ranks) / Znum(ranks) )
+!
+!                    vsy(iz,iv,im) =                                           &
+!                      - sgn(ranks) * tau(ranks) / Znum(ranks)                 &
+!                      * ( R0_Ln(ranks) + R0_Lt(ranks) * ( 0.5_DP*vl(iv)**2    &
+!                                               + omg(iz)*mu(im) - 1.5_DP ) )  
+!              end do
+!
+!            end do   ! im loop ends
+!
+!            ksq(:,:,iz) = 0._DP
+!            do my = ist_y, iend_y
+!              do mx = -nx, nx
+!                ksq(mx,my,iz) = (kx(mx)**2)*gg(1,1)         &
+!                              + 2._DP*kx(mx)*ky(my)*gg(1,2) &
+!                              + (ky(my)**2)*gg(2,2)
+!              end do
+!            end do
+!
+!          else
+!
+!            write( olog, * ) " # wrong choice of the equilibrium "
+!            call flush(olog)
+!            call MPI_Finalize(ierr_mpi)
+!            stop
+!
+!          end if
+!
+!
+!          do im = 0, nm
+!            do my = ist_y, iend_y
+!              do mx = -nx, nx
+!                kmo           = sqrt( 2._DP * ksq(mx,my,iz) * mu(im) / omg(iz) ) &
+!                               * dsqrt( tau(ranks)*Anum(ranks) ) / Znum(ranks)
+!                call math_j0( kmo, j0(mx,my,iz,im) )
+!                call math_j1( kmo, j1(mx,my,iz,im) )
+!                call math_j2( kmo, j2(mx,my,iz,im) )
+!              end do
+!            end do
+!          end do
+!
+!
+!          do my = ist_y, iend_y
+!            do mx = -nx, nx
+!              bb     = ksq(mx,my,iz) / omg(iz)**2 &
+!                        * tau(ranks)*Anum(ranks)/(Znum(ranks)**2)
+!              call math_g0( bb, g0(mx,my,iz) )
+!            end do
+!          end do
+!
+!        end do   ! iz loop ends
+!
+!        cfsrf   = 0._DP
+!        cfsrf_l = 0._DP
+!        do iz = -nz, nz-1
+!          cfsrf_l   = cfsrf_l + rootg(iz)
+!                                            ! normalization coefficient for 
+!                                            ! the surface average
+!        end do
+!        call MPI_Allreduce( cfsrf_l, cfsrf, 1, MPI_DOUBLE_PRECISION, &
+!                            MPI_SUM, zsp_comm_world, ierr_mpi )
+!
+!        if ( vel_rank == 0 ) then
+!          do iz = -nz, nz-1
+!            dvp(iz)  = sqrt( 2._DP * (0.5_DP * dm**2) * omg(iz) )
+!          end do
+!        end if
+!        call MPI_Bcast( dvp, 2*nz, MPI_DOUBLE_PRECISION, 0, &
+!                        vel_comm_world, ierr_mpi )
+!
+!        do im = 0, nm
+!          do iv = 1, 2*nv
+!            do iz = -nz, nz-1
+!              fmx(iz,iv,im)   = exp( - 0.5_DP * vl(iv)**2 - omg(iz) * mu(im) ) &
+!                              / sqrt( twopi**3 )
+!            end do
+!          end do
+!        end do
+!
+!        allocate( ww(-nx:nx,0:ny,-nz:nz-1) )
+!
+!! --- GK polarization factor for efield calculation 
+!        fct_poisson(:,:,:) = 0._DP
+!        fct_e_energy(:,:,:) = 0._DP
+!
+!        ww(:,:,:) = 0._DP
+!        do iz = -nz, nz-1
+!          do my = ist_y, iend_y
+!            do mx = -nx, nx
+!
+!              if ( rankw == 0 .and. mx == 0 .and. my == 0 ) then !- (0,0) mode
+!
+!                fct_poisson(mx,my,iz) = 0._DP
+!                fct_e_energy(mx,my,iz) = 0._DP
+!
+!              else
+!
+!                ww(mx,my,iz) = lambda_i * ksq(mx,my,iz)
+!                do is = 0, ns-1
+!                  bb   = ksq(mx,my,iz) / omg(iz)**2 &
+!                          * tau(is)*Anum(is)/(Znum(is)**2)
+!                  call math_g0( bb, gg0 )
+!                  ww(mx,my,iz) = ww(mx,my,iz)  &
+!                               + Znum(is) * fcs(is) / tau(is) * ( 1._DP - gg0 )
+!                end do
+!                fct_poisson(mx,my,iz) = 1._DP / ww(mx,my,iz)
+!                fct_e_energy(mx,my,iz) = ww(mx,my,iz)
+!
+!              end if
+!
+!            end do
+!          end do
+!        end do
+!
+!
+!! --- ZF-factor for adiabatic model
+!        if ( ns == 1 ) then
+!
+!          ww(:,:,:) = 0._DP
+!          do iz = -nz, nz-1
+!            my = 0
+!              do mx = -nx, nx
+!                ww(mx,my,iz) = ( 1._DP - g0(mx,my,iz) )       &
+!                             / ( 1._DP - g0(mx,my,iz) + tau(0)*tau_ad )
+!              end do
+!          end do
+!
+!          call intgrl_fsrf ( ww, fctgt )
+!
+!          if ( rankw == 0 )  then
+!            fctgt(0)   = ( 1._DP - g0(0,0,0) ) / ( 1._DP - g0(0,0,0) + tau(0)*tau_ad )
+!                                              ! g0(0,0,iz) has no z dependence
+!          endif
+!
+!        endif
+!
+!        deallocate( ww )
+!
+!        allocate( wf(-nx:nx,0:ny,-nz:nz-1,1:2*nv,0:nm) )
+!        allocate( nw(-nx:nx,0:ny,-nz:nz-1) )
+!        wf(:,:,:,:,:) = ( 0._DP, 0._DP )
+!        nw(:,:,:) = ( 0._DP, 0._DP )
+!
+!! --- GK polarization factor for mfield calculation 
+!        fct_ampere(:,:,:) = 0._DP
+!        fct_m_energy(:,:,:) = 0._DP
+!
+!        if ( beta .ne. 0._DP ) then
+!       
+!          do im = 0, nm
+!            do iv = 1, 2*nv
+!              do iz = -nz, nz-1
+!                do my = ist_y, iend_y
+!                  do mx = -nx, nx
+!                    wf(mx,my,iz,iv,im) = Znum(ranks) * fcs(ranks) / Anum(ranks)  &
+!                                       * vl(iv)**2 * j0(mx,my,iz,im)**2 * fmx(iz,iv,im)
+!                  end do
+!                end do
+!              end do
+!            end do
+!          end do
+!  
+!          call intgrl_v0_moment_ms ( wf, nw )
+!  
+!          do iz = -nz, nz-1
+!            do my = ist_y, iend_y
+!              do mx = -nx, nx
+!                fct_ampere(mx,my,iz) = 1._DP / real( ksq(mx,my,iz) + beta * nw(mx,my,iz), kind=DP )
+!                fct_m_energy(mx,my,iz) = ksq(mx,my,iz) / beta
+!              end do
+!            end do
+!          end do
+!  
+!          if ( rankw == 0 ) then
+!            do iz = -nz, nz-1
+!              fct_ampere(0,0,iz) = 0._DP
+!              fct_m_energy(0,0,iz) = 0._DP
+!            end do
+!          end if
+!
+!        end if
+!
+!        deallocate( wf )
+!        deallocate( nw )
+!
+!  END SUBROUTINE geom_set_operators_old
 
 
 !--------------------------------------
@@ -2013,6 +2077,50 @@ CONTAINS
               end do
             end do
 
+!sakano_ring-dipole st 202303
+          else if( trim(equib_type) == "ring" ) then
+
+            dpara(iz) = dz * omg(iz) * rootg(iz)
+
+            kkx = 0._DP
+            kky = r_major*( domgdx + (gg(1,3)*gg(2,2) - gg(1,2)*gg(2,3))*domgdz/omg(iz)**2 )
+
+            do im = 0, nm
+! r_major = 1 is assumed as the equilibrium length unit
+! B on the equatorial plane is also unity
+
+              vp(iz,im)  = sqrt( 2._DP * mu(im) * omg(iz) )
+
+              !mir(iz,im) = mu(im) * ub_dot_grdb
+              mir(iz,im) = mu(im) * domgdz / ( omg(iz)*rootg(iz) )
+
+              do iv = 1, 2*nv
+                vdx(iz,iv,im) = 0._DP
+                   
+                !vdy(iz,iv,im) =                                        &
+                !        ( vl(iv)**2 + omg(iz)*mu(im) )                 &
+                !      * ( ub_crs_grdb / omg(iz)**2 ) * sqrt( gg(2,2) ) &
+                !      * ( sgn(ranks) * tau(ranks) / Znum(ranks) )      ! ion's vdy is negative y direction
+                vdy(iz,iv,im) =                                              &
+                        ( vl(iv)**2 + omg(iz)*mu(im) ) / ( r_major*omg(iz) ) &
+                      * kky                                                  &
+                      * ( sgn(ranks) * tau(ranks) / Znum(ranks) ) 
+                vsy(iz,iv,im)=                                             &
+                      - sgn(ranks) * tau(ranks) / Znum(ranks)              &
+                      * ( R0_Ln(ranks) + R0_Lt(ranks) * ( 0.5_DP*vl(iv)**2 &
+                                               + omg(iz)*mu(im) - 1.5_DP ) ) ! ion's vsy is negative y directuin
+              end do
+
+            end do   ! im loop ends
+
+            ksq(:,:,iz) = 0._DP
+            do my = ist_y, iend_y
+              do mx = -nx, nx
+                ksq(mx,my,iz) = ( kx(mx) * gg(1,1) )**2 + ( ky(my) * gg(2,2) )**2
+              end do
+            end do
+!sakano_ring-dipole end 202303
+
           else
 
             write( olog, * ) " # wrong choice of the equilibrium "
@@ -2273,7 +2381,7 @@ CONTAINS
 
        ! translate (x,y,z)->(r,t,q)=(rho,theta,zeta)
        !   NOTE: cx*rho0/(cy*q_0=1) is used.
-        gdomgdr = cx*gdomgdx + s_hat*wzz*gdomgdy
+        gdomgdr = cx*gdomgdx + cx*s_hat*wzz*gdomgdy
         gdomgdt = gdomgdz + cy*q_0*gdomgdy
         gdomgdq = - cy*gdomgdy
         ggrr = ggxx/cx**2
@@ -2572,19 +2680,20 @@ CONTAINS
 
       do iz = -nz, nz-1
         giz = iz - global_nz + 2*nz * rankz + nz
-        self%zz(iz)        = mtr_global%zz(giz)    
-        self%theta(iz)     = mtr_global%theta(giz) 
-        self%omg(iz)       = mtr_global%omg(giz)   
-        self%domgdx(iz)    = mtr_global%domgdx(giz)
-        self%domgdy(iz)    = mtr_global%domgdy(giz)
-        self%domgdz(iz)    = mtr_global%domgdz(giz)
-        self%gxx(iz)       = mtr_global%gxx(giz)
-        self%gxy(iz)       = mtr_global%gxy(giz)
-        self%gxz(iz)       = mtr_global%gxz(giz)
-        self%gyy(iz)       = mtr_global%gyy(giz)
-        self%gyz(iz)       = mtr_global%gyz(giz)
-        self%gzz(iz)       = mtr_global%gzz(giz)
-        self%rootg_xyz(iz) = mtr_global%rootg_xyz(giz)
+        self%zz_labframe(iz) = mtr_g%zz(giz)    
+        self%zz(iz)        = mtr_g%zz(giz)    
+        self%theta(iz)     = mtr_g%theta(giz) 
+        self%omg(iz)       = mtr_g%omg(giz)   
+        self%domgdx(iz)    = mtr_g%domgdx(giz)
+        self%domgdy(iz)    = mtr_g%domgdy(giz)
+        self%domgdz(iz)    = mtr_g%domgdz(giz)
+        self%gxx(iz)       = mtr_g%gxx(giz)
+        self%gxy(iz)       = mtr_g%gxy(giz)
+        self%gxz(iz)       = mtr_g%gxz(giz)
+        self%gyy(iz)       = mtr_g%gyy(giz)
+        self%gyz(iz)       = mtr_g%gyz(giz)
+        self%gzz(iz)       = mtr_g%gzz(giz)
+        self%rootg_xyz(iz) = mtr_g%rootg_xyz(giz)
       end do
 
   END SUBROUTINE metric_local_copy_global

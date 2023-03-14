@@ -6,6 +6,9 @@ MODULE GKV_vmecbzx
 !
 !    Update history of gkvp_vmecbxz.f90
 !    --------------
+!      gkvp_f0.62 (S. Maeyama, Mar 2023)
+!        - Input of vmecbzx_boozxcoef is modified from local iz for each rankz
+!          to global index giz.
 !      gkvp_f0.57 (S. Maeyama, Oct 2020)
 !        - Version number f0.57 is removed from filename.
 !
@@ -43,9 +46,9 @@ CONTAINS
     implicit none
 
     integer, intent(in)        :: nss, ntheta, nzeta
-    integer                    :: is, jj, ierr, ibzx
+    integer                    :: ibzx
     character(512) :: f_bozx
-    character(512) :: env_string       !fj
+!   character(512) :: env_string       !fj
 
     namelist /bozxf/ f_bozx
 
@@ -132,14 +135,20 @@ CONTAINS
 
 
 !----------------------------------------------------------------------------------
-  SUBROUTINE vmecbzx_boozx_coeff( isw,  nss,  ntheta,  nzeta,  s_input,  iz, zz,  lz_l,    &  ! input 
+!smae start 202303
+!  SUBROUTINE vmecbzx_boozx_coeff( isw,  nss,  ntheta,  nzeta,  s_input,  iz, zz,  lz_l,    &  ! input 
+  SUBROUTINE vmecbzx_boozx_coeff( isw,  nss,  ntheta,  nzeta,  s_input,  giz, zz,  lz_l,    &  ! input 
+!smae end 202303
                                    s_0,       q_0,    s_hat,   eps_r,   phi_ax,           &  ! output
                                    omg,     rootg,   domgdx,  domgdz,  domgdy,            &
                                   gg11,      gg12,     gg13,    gg22,                     &
                                   gg23,      gg33  )
 !----------------------------------------------------------------------------------
 
-    integer, intent(in)        :: isw, nss, ntheta, nzeta, iz
+!smae start 202303
+!    integer, intent(in)        :: isw, nss, ntheta, nzeta, iz
+    integer, intent(in)        :: isw, nss, ntheta, nzeta, giz
+!smae end 202303
     real(kind=DP), intent(in)  :: s_input, zz, lz_l
 
     real(kind=DP), intent(inout) :: s_0, q_0, s_hat, eps_r, phi_ax
@@ -147,8 +156,8 @@ CONTAINS
     real(kind=DP), intent(out) :: gg11, gg12, gg13, gg22, gg23, gg33
 
 ! --- local variables 
-    integer                    :: is, jj, is0, iz0, nz0, jj0, zt0, giz
-    real(kind=DP)              :: zz0, eps_a
+    integer                    :: is0, jj0, zt0
+    real(kind=DP)              :: eps_a
 
 
    ! is0 = nint(s_input*(nss+1))
@@ -164,7 +173,9 @@ CONTAINS
     else if ( isw == 1 ) then
 
       s_0   =   ss_bz(is0)
-      giz = (-global_nz + 2*nz*rankz + iz + nz )          
+!smae start 202303
+!      giz = (-global_nz + 2*nz*rankz + iz + nz )          
+!smae end 202303
       jj0 = giz + ntheta/2
   
      

@@ -67,7 +67,8 @@ CONTAINS
            trim(equib_type) == "s-alpha-shift"  .OR. &
            trim(equib_type) == "circ-MHD" .OR. &
            trim(equib_type) == "vmec"     .OR. &
-           trim(equib_type) == "eqdsk" ) then
+           trim(equib_type) == "eqdsk"    .OR. &
+           trim(equib_type) == "ring" ) then
 
         call set_cnfig
 
@@ -180,6 +181,7 @@ CONTAINS
 
       if( rankg == 0 ) then
         open( omtr, file=trim(f_hst)//"mtr."//cnew )
+        open( omtf, file=trim(f_hst)//"mtf."//cnew )
         open( odtc, file=trim(f_hst)//"dtc."//cnew )
         open( oeng, file=trim(f_hst)//"eng."//cnew )
         open( omen, file=trim(f_hst)//"men."//cnew )
@@ -266,6 +268,7 @@ CONTAINS
 
      if( rankg == 0 ) then
        close( omtr )
+       close( omtf )
        close( odtc )
        close( oeng )
        close( omen )

@@ -13,9 +13,9 @@ PROGRAM GKV_main
 !         |
 !        colli, colliimp, exb, shearflow
 !         |
-!        bndry, fft, fld, zfilter
+!        bndry, fft, fld, zfilter, geom
 !         |
-!        clock, intgrl, tips, freq, igs, vmecbzx, fileio
+!        clock, intgrl, tips, freq, igs, vmecbzx, ring, fileio
 !         |
 !        mpienv, math
 !         |

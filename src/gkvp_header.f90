@@ -233,6 +233,7 @@ MODULE GKV_header
                         inbz = 14, &
                         ivmc = 15, &
                         omtr = 16, &
+                        omtf = 17, &
                         ovmc = olog
 
 

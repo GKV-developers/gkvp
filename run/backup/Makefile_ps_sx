@@ -47,6 +47,7 @@ gkvp:	$(SRC)gkvp_header.f90\
 	$(SRC)gkvp_tips.f90\
 	$(SRC)gkvp_vmecbzx.f90\
 	$(SRC)gkvp_igs.f90\
+	$(SRC)gkvp_ring.f90\
 	$(SRC)gkvp_f0.56_bndry_tune_nec1.f90\
 	$(SRC)gkvp_f0.56_colli_tune_nifs.f90\
 	$(SRC)$(FFT).f90\
@@ -56,8 +57,9 @@ gkvp:	$(SRC)gkvp_header.f90\
 	$(SRC)gkvp_f0.56_zfilter_tune_nec1.f90\
 	$(SRC)gkvp_f0.56_exb_tune2r_0813.f90\
 	$(SRC)gkvp_trans.f90\
-	$(SRC)gkvp_f0.56_advnc_tune_nec1.f90\
 	$(SRC)gkvp_shearflow.f90\
+	$(SRC)gkvp_geom.f90\
+	$(SRC)gkvp_advnc.f90\
 	$(SRC)gkvp_dtc.f90\
 	$(SRC)gkvp_out.f90\
 	$(SRC)gkvp_set.f90\
@@ -72,6 +74,7 @@ gkvp:	$(SRC)gkvp_header.f90\
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_tips.f90
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_vmecbzx.f90
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_igs.f90
+	$(FC) $(FFRAGS) -c $(SRC)gkvp_ring.f90
 	$(FC) $(FFLAGS) $(FFLAGS_OMP3) -c $(SRC)gkvp_f0.56_bndry_tune_nec1.f90
 	$(FC) $(FFLAGS) $(FFLAGS_OMP2) -c $(SRC)gkvp_f0.56_colli_tune_nifs.f90
 	$(FC) $(FFLAGS) $(FFLAGS_OMP1) -c $(SRC)$(FFT).f90 $(INC)
@@ -81,8 +84,9 @@ gkvp:	$(SRC)gkvp_header.f90\
 	$(FC) $(FFLAGS) $(FFLAGS_OMP2) -c $(SRC)gkvp_f0.56_zfilter_tune_nec1.f90
 	$(FC) $(FFLAGS) $(FFLAGS_OMP1) -c $(SRC)gkvp_f0.56_exb_tune2r_0813.f90
 	$(FC) $(FFLAGS) $(FFLAGS_OMP1) -c $(SRC)gkvp_trans.f90
-	$(FC) $(FFLAGS) $(FFLAGS_OMP3) -c $(SRC)gkvp_f0.56_advnc_tune_nec1.f90
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_shearflow.f90
+	$(FC) $(FFLAGS) -c $(SRC)gkvp_geom.f90
+	$(FC) $(FFLAGS) $(FFLAGS_OMP3) -c $(SRC)gkvp_advnc.f90
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_dtc.f90
 	$(FC) $(FFLAGS) $(FFLAGS_OMP2) -c $(SRC)gkvp_out.f90
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_set.f90
@@ -98,6 +102,7 @@ gkvp:	$(SRC)gkvp_header.f90\
 			gkvp_tips.o\
 			gkvp_vmecbzx.o\
 			gkvp_igs.o\
+			gkvp_ring.o\
 			gkvp_f0.56_bndry_tune_nec1.o\
 			gkvp_f0.56_colli_tune_nifs.o\
 			$(FFT).o\
@@ -107,8 +112,9 @@ gkvp:	$(SRC)gkvp_header.f90\
 			gkvp_f0.56_zfilter_tune_nec1.o\
 			gkvp_f0.56_exb_tune2r_0813.o\
 			gkvp_trans.o\
-			gkvp_f0.56_advnc_tune_nec1.o\
 			gkvp_shearflow.o\
+			gkvp_geom.o\
+			gkvp_advnc.o\
 			gkvp_dtc.o\
 			gkvp_out.o\
 			gkvp_set.o\

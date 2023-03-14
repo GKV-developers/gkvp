@@ -17,7 +17,9 @@ MODULE GKV_math
   private
 
   public   math_j0, math_j0zero, math_j1, math_j2, &
-           math_i0, math_g0,     math_random
+           math_i0, math_g0,     math_random, &
+           math_eli1, math_eli2
+
 
   integer, parameter :: ifnc = 99 ! unit number preserved 
                                   ! for this module
@@ -157,6 +159,47 @@ CONTAINS
     return
 
   END SUBROUTINE math_g0
+
+  SUBROUTINE math_eli1( x, eli1 )
+!
+!     Complete elliptic integral of the first kind K
+!
+    real(kind=DP), intent(in)  :: x
+    real(kind=DP), intent(out) :: eli1
+!
+    real(kind=DP) :: sqrtx
+!
+      sqrtx = sqrt(x)
+      if( 0._DP <= sqrtx  .and.  sqrtx < 1._DP ) then
+        eli1 = ellipk(sqrtx)
+      else
+        print *, "### math_eli1:  x is out of range!"
+      end if
+
+    return
+
+  END SUBROUTINE math_eli1
+
+  SUBROUTINE math_eli2( x, eli2 )
+!
+!     0th-order modified Bessel function
+!
+    real(kind=DP), intent(in)  :: x
+    real(kind=DP), intent(out) :: eli2
+!
+    real(kind=DP) :: sqrtx
+!
+      sqrtx = sqrt(x)
+      if( 0._DP <= sqrtx  .and.  sqrtx < 1._DP ) then
+        eli2 = ellipe(sqrtx)
+      else
+        print *, "### math_eli2:  x is out of range!"
+      end if
+
+    return
+
+  END SUBROUTINE math_eli2
+
 
 
   SUBROUTINE math_random( rr )
@@ -825,6 +868,160 @@ CONTAINS
       dbesi1 = y
       end function dbesi1
 !
+FUNCTION ellipk(k)
+!
+! Complete elliptic integral of the 1st kind
+!   K(k) = \int_0^(pi/2) (1-k**2*sin(q)**2)**(-1/2) dq
+! where 0<=k<1.
+!
+! Algorithm based on Jacobi's nome q expansion [Refs1-3]
+! Implemented by S. Maeyama (July,2021)
+!
+! Ref1. T.Fukushima, "Fast computation of complete elliptic integrals and 
+!       Jacobian elliptic functions", Celest. Mech. Dyn. Astr. 105,
+!       305-328 (2009). DOI 10.1007/s10569-009-9228-z
+! Ref2. J.Yamauchi, T.Uno, S.Ichimatsu, "Denshikeisanki notameno
+!       suuchikeisanhou III" (Baifukan, 1971), p.258. (Japanese)
+! Ref3. http://www.totoha.net/fc2_mirror2/Complete_Elliptical_Integral.pdf
+!
+  real(kind=8) :: ellipk
+  real(kind=8), intent(in) :: k
 
+  real(kind=8), parameter :: halfpi=2.d0*atan(1.d0)
+  real(kind=8), parameter :: piinv=1.d0/(2.d0*halfpi)
+  real(kind=8) :: kp2,kp,sqrtkp,eps,eps4,q,q4,q9,q16,q25,t3
+
+  if (k<0.7d0) then
+
+    kp2=1.d0-k*k
+    kp=sqrt(kp2)
+    sqrtkp=sqrt(kp)
+    eps=0.5d0*(1.d0-sqrtkp)/(1.d0+sqrtkp)
+    eps4=eps*eps*eps*eps
+    q=eps*(1.d0+eps4*(2.d0+eps4*(15.d0  &
+     +eps4*(150.d0+eps4*(1707.d0+eps4*(20910.d0+eps4*(268616.d0)))))))
+    q4=q*q*q*q
+    q9=q4*q4*q
+    q16=q4*q4*q4*q4
+    q25=q16*q9
+    t3=1.d0+2.d0*(q+q4+q9+q16+q25)
+    ellipk=halfpi*t3*t3
+
+  else
+
+    kp2=k*k ! modify for large k
+    kp=sqrt(kp2)
+    sqrtkp=sqrt(kp)
+    eps=0.5d0*(1.d0-sqrtkp)/(1.d0+sqrtkp)
+    eps4=eps*eps*eps*eps
+    q=eps*(1.d0+eps4*(2.d0+eps4*(15.d0  &
+     +eps4*(150.d0+eps4*(1707.d0+eps4*(20910.d0+eps4*(268616.d0)))))))
+    q4=q*q*q*q
+    q9=q4*q4*q
+    q16=q4*q4*q4*q4
+    q25=q16*q9
+    t3=1.d0+2.d0*(q+q4+q9+q16+q25)
+    ellipk=halfpi*t3*t3
+    ellipk=-piinv*ellipk*log(q) ! modify for large k
+
+  end if
+
+    return
+
+END FUNCTION ellipk
+ 
+
+FUNCTION ellipe(k)
+!                                                                                                                                                                 
+! Complete elliptic integral of the 2nd kind
+!   E(k) = \int_0^(pi/2) (1-k**2*sin(q)**")**(1/2) dq
+! where 0<=k<1.
+!
+! Algorithm based on Jacobi's nome q expansion [Refs1-3]
+! Implemented by S. Maeyama (July,2021)
+!
+! Ref1. T.Fukushima, "Fast computation of complete elliptic integrals and 
+!       Jacobian elliptic functions", Celest. Mech. Dyn. Astr. 105,
+!       305-328 (2009). DOI 10.1007/s10569-009-9228-z
+! Ref2. J.Yamauchi, T.Uno, S.Ichimatsu, "Denshikeisanki notameno
+!       suuchikeisanhou III" (Baifukan, 1971), p.258. (Japanese)
+! Ref3. http://www.totoha.net/fc2_mirror2/Complete_Elliptical_Integral.pdf
+!
+  real(kind=8) :: ellipe
+  real(kind=8), intent(in) :: k
+
+  real(kind=8), parameter :: piover6=2.d0*atan(1.d0)/3.d0
+  real(kind=8), parameter :: halfpi=2.d0*atan(1.d0)
+  real(kind=8), parameter :: piinv=1.d0/(2.d0*halfpi)
+  real(kind=8) :: kp2,kp,sqrtkp,eps,eps4,q,q2,q4,q6,q8,q9,&
+                  q10,q12,q14,q16,q18,q20,q22,q25,t3,t3sq,fac,wq
+  real(kind=8) :: ellipkp, ellipk, ellipep
+
+  if (k<0.7d0) then
+
+    kp2=1.d0-k*k
+    kp=sqrt(kp2)
+    sqrtkp=sqrt(kp)
+    eps=0.5d0*(1.d0-sqrtkp)/(1.d0+sqrtkp)
+    eps4=eps*eps*eps*eps
+    q=eps*(1.d0+eps4*(2.d0+eps4*(15.d0  &
+     +eps4*(150.d0+eps4*(1707.d0+eps4*(20910.d0+eps4*(268616.d0)))))))
+    q2=q*q
+    q4=q2*q2
+    q6=q4*q2
+    q8=q4*q4
+    q9=q8*q
+    q10=q4*q6
+    q12=q6*q6
+    q14=q6*q8
+    q16=q8*q8
+    q18=q9*q9
+    q20=q10*q10
+    q22=q20*q2
+    q25=q16*q9
+    t3=1.d0+2.d0*(q+q4+q9+q16+q25) !&
+    t3sq=t3*t3
+    fac=piover6/t3sq
+    wq=q2+3.d0*q4+4.d0*q6+7.d0*q8+6.d0*q10+12.d0*q12+8.d0*q14  &
+      +15.d0*q16+13.d0*q18+18.d0*q20+12.d0*q22
+    ellipe=fac*(1.d0+(1.d0+kp2)*t3sq*t3sq-24.d0*wq)
+
+  else
+
+    kp2=k*k ! modify for large k
+    kp=sqrt(kp2)
+    sqrtkp=sqrt(kp)
+    eps=0.5d0*(1.d0-sqrtkp)/(1.d0+sqrtkp)
+    eps4=eps*eps*eps*eps
+    q=eps*(1.d0+eps4*(2.d0+eps4*(15.d0  &
+     +eps4*(150.d0+eps4*(1707.d0+eps4*(20910.d0+eps4*(268616.d0)))))))
+    q2=q*q
+    q4=q2*q2
+    q6=q4*q2
+    q8=q4*q4
+    q9=q8*q
+    q10=q4*q6
+    q12=q6*q6
+    q14=q6*q8
+    q16=q8*q8
+    q18=q9*q9
+    q20=q10*q10
+    q22=q20*q2
+    q25=q16*q9
+    t3=1.d0+2.d0*(q+q4+q9+q16+q25)
+    t3sq=t3*t3
+    fac=piover6/t3sq
+    wq=q2+3.d0*q4+4.d0*q6+7.d0*q8+6.d0*q10+12.d0*q12+8.d0*q14  &
+      +15.d0*q16+13.d0*q18+18.d0*q20+12.d0*q22
+    ellipep=fac*(1.d0+(1.d0+kp2)*t3sq*t3sq-24.d0*wq) ! modify for large k
+    ellipkp=halfpi*t3sq                              ! modify for large k
+    ellipk=-piinv*ellipkp*log(q)                     ! modify for large k
+    ellipe=ellipk+(halfpi-ellipep*ellipk)/ellipkp    ! modify for large k
+
+  end if
+
+    return
+                                                                                                                                                                  
+END FUNCTION ellipe
 
 END MODULE GKV_math
