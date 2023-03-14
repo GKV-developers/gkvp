@@ -1,5 +1,5 @@
  &cmemo memo="GKV-plus f0.61 developed for pre-exa-scale computing", &end
- &calct calc_type="linear",
+ &calct calc_type="lin_freq",
         z_bound="outflow",
         z_filt="off",
         z_calc="cf4",
@@ -7,7 +7,7 @@
         init_random=.false.,
         num_triad_diag=0, &end
  &triad mxt = 0, myt = 0/
- &equib equib_type = "s-alpha", &end
+ &equib equib_type = "analytic", &end
  &run_n inum=%%%,
         ch_res = .false., &end
  &files f_log="%%DIR%%/log/gkvp.",
@@ -25,8 +25,8 @@
         adapt_dt = .true., 
         courant_num = 0.5d0,
         time_advnc = "auto_init", &end
- &physp R0_Ln = 2.2d0,
-        R0_Lt = 10.d0,
+ &physp R0_Ln = 2.22d0,
+        R0_Lt = 6.92d0,
         nu = 1.d0,
         Anum = 1.d0,
         Znum = 1.d0,
@@ -39,17 +39,17 @@
         beta = 0.d0,
         ibprime = 0,
         vmax = 4.5d0,
-        nx0 = 0, &end
+        nx0 = 10000, &end
  &rotat mach = 0.d0,
         uprime = 0.d0,
         gamma_e = 0.d0, &end
- &nperi n_tht = 1, 
-        kymin = 0.5d0, 
+ &nperi n_tht = 3, 
+        kymin = 0.05d0, 
         m_j   = 1, 
         del_c = 0.d0, &end
  &confp eps_r    = 0.18d0,
         eps_rnew = 1.d0,
-        q_0      = 1.39d0,
+        q_0      = 1.4d0,
         s_hat    = 0.8d0,
         lprd     = 0.d0,
         mprd     = 0.d0,

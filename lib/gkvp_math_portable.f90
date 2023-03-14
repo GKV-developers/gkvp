@@ -5,6 +5,8 @@ MODULE GKV_math
 !
 !    Update history of gkvp_set.f90
 !    --------------
+!      gkvp_f0.62 (S. Maeyama, Mar 2023)
+!        - Elliptic integrals math_eli1, math_eli2 are added.
 !      gkvp_f0.61 (S. Maeyama, Mar 2021)
 !        - random_seed is added for reproducibility.
 !

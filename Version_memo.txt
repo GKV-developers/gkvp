@@ -1,10 +1,18 @@
+gkvp_f0.62                                              S. Maeyama     Mar 2023
+1) equib_type = "ring" is added for ring dipole geometry.
+
+2) Rotating flux-tube model is implemented to treat equilibrium shearflows,
+   available for torus: equib_type = "s-alpha", "s-alpha-shift", "analytic",
+   "circMHD", "vmec", "igs". (But not available for "slab", "ring")
+
+
+
 gkvp_f0.61                                              S. Maeyama     Mar 2021
 1) equib_type = "s-alpha-shift" is added. s-alpha model with Shafranov shift.
 
 2) random_seed is applied in lib/gkvp_math_portable.f90.
 
 3) Treat the tracer particle setting (fcs=0).
-
 
 
 

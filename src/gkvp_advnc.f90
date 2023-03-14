@@ -5,6 +5,9 @@ MODULE GKV_advnc
 !
 !    Update history of gkvp_advnc.f90
 !    --------------
+!      gkvp_f0.62 (S. Maeyama, Mar 2023)
+!        - Time-dependent metrics for rotating flux-tube model is implemented.
+!          See lines at "!%%% For shearflow rotating flux tube model %%%".
 !      gkvp_f0.57 (S. Maeyama, Oct 2020)
 !        - Version number f0.57 is removed from filename.
 !        - Unitialized access for padding iend_y<my is removed.

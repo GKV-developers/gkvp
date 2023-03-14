@@ -5,6 +5,9 @@ MODULE GKV_set
 !
 !    Update history of gkvp_set.f90
 !    --------------
+!      gkvp_f0.62 (S. Maeyama, Mar 2023)
+!        - Contents of subroutine set_cnfig are moved to GKV_geom, to implement
+!          time-dependent metrics and operators in rotating flux-tube model.
 !      gkvp_f0.61 (S. Maeyama, Mar 2021)
 !        - equib_type = "s-alpha-shift" is added.
 !        - Initial random phase rr is set by global (mx,gmy) indices.

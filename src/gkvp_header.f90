@@ -18,6 +18,11 @@ MODULE GKV_header
 !
 !    Update history
 !    --------------
+!      gkvp_f0.62 (S. Maeyama, Mar 2023)
+!        - flag_shearflow = "rotating" is set as a default. Alternatively,
+!          flag_shaerflow = "remap" is still available for time-discontinuous
+!          wave-vector remap with nearest grid approximation.
+!        - File I/O unit "omtf" is added for metrics in flux-coordinates.
 !      gkvp_f0.61 (S. Maeyama, Mar 2021)
 !        - equib_type is extended from len=8 to len=15.
 !      gkvp_f0.57 (S. Maeyama, Oct 2020)
