@@ -63,6 +63,9 @@
         rdeps3_10= 0.d0,
         malpha   = 0.d0,    &end
 
+ &ring  ring_a = 0.5d0,
+        kxmin  = 0.05d0, &end
+
  &vmecp s_input = 0.5d0,
           nss = 501,
           ntheta = 384,      

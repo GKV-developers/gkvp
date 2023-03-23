@@ -70,8 +70,8 @@ MODULE GKV_dtc
               do mx = -nx, nx
 !              do mx = 0, nx
                 kvd = kx(mx) * vdx(iz,iv,im) + ky(my) * vdy(iz,iv,im)
-                if ( kvd_max < kvd ) then 
-                  kvd_max = kvd
+                if ( kvd_max < abs(kvd) ) then 
+                  kvd_max = abs(kvd)
                 end if 
               end do
             end do

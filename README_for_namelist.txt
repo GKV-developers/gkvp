@@ -1,12 +1,13 @@
-NOTE for gkvp_f0.30                                     S. Maeyama   March 2013
-Updated for gkvp_f0.40                                   M. Nakata    June 2014
-Updated for gkvp_f0.45                                   M. Nakata    July 2015
-Updated for gkvp_f0.46                                  S. Maeyama     May 2016
-Updated for gkvp_f0.47                                  S. Maeyama     Nov 2016
-Updated for gkvp_f0.48                                  S. Maeyama     Dec 2016
-Updated for gkvp_f0.50                                  S. Maeyama     Sep 2017
-Updated for gkvp_f0.55                                   M. Nakata     Dec 2019
+Updated for gkvp_f0.62                                  S. Maeyama   March 2023
 Updated for gkvp_f0.61                                  S. Maeyama   March 2021
+Updated for gkvp_f0.55                                   M. Nakata     Dec 2019
+Updated for gkvp_f0.50                                  S. Maeyama     Sep 2017
+Updated for gkvp_f0.48                                  S. Maeyama     Dec 2016
+Updated for gkvp_f0.47                                  S. Maeyama     Nov 2016
+Updated for gkvp_f0.46                                  S. Maeyama     May 2016
+Updated for gkvp_f0.45                                   M. Nakata    July 2015
+Updated for gkvp_f0.40                                   M. Nakata    June 2014
+NOTE for gkvp_f0.30                                     S. Maeyama   March 2013
 
 %%% How to run the code %%%
 
@@ -66,6 +67,7 @@ equib_type: "analytic" -  Analytic helical field with the metrics in cylinder
             "vmec"     -  Tokamak/stellarator field from the VMEC code
             "eqdsk"    -  Tokamak field (MEUDAS/TOPICS or G-EQDSK) via IGS code
             "slab"     -  Shearless slab geometry
+            "ring"     -  Ring dipole geometry
 
 inum: current shot number
 
@@ -155,6 +157,15 @@ m_j: mode connection number in fluxtube model, kxmin = |2*pi*s_hat*kymin/m_j|
 del_c: mode connection phase in fluxtube model
 
 eps_r ~~ malpha : geometrical parameters such as safety factor, B-shear, etc.  
+
+&ring: parameters for ring dipole geometry
+       !  There is a ring current at R=a. The field line passing through (R,Z)=(R0,0) is picked up as a flux-tube domain.
+       !  The reference length is set to be R0 (not the ring current at R=a).
+       !  The reference magnetic field strength is B0 at (R,Z)=(R0,0).
+
+ring_a: = a / R0, which specify a flux tube of the ring dipole.
+
+kxmin: Minimum wavenumber in kx, valid only when equib_type == "ring"
 
 &vmecp -- &bozxf : parameters for vmec equilibrium
 

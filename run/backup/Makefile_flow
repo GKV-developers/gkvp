@@ -50,6 +50,7 @@ gkvp:	$(SRC)gkvp_header.f90\
 	$(SRC)gkvp_tips.f90\
 	$(SRC)gkvp_vmecbzx.f90\
 	$(SRC)gkvp_igs.f90\
+	$(SRC)gkvp_ring.f90\
 	$(SRC)gkvp_bndry.f90\
 	$(SRC)gkvp_colli.f90\
 	$(SRC)$(FFT).f90\
@@ -57,6 +58,7 @@ gkvp:	$(SRC)gkvp_header.f90\
 	$(SRC)gkvp_colliimp.f90\
 	$(SRC)gkvp_freq.f90\
 	$(SRC)gkvp_zfilter.f90\
+	$(SRC)gkvp_geom.f90\
 	$(SRC)gkvp_exb.f90\
 	$(SRC)gkvp_trans.f90\
 	$(SRC)gkvp_advnc.f90\
@@ -75,6 +77,7 @@ gkvp:	$(SRC)gkvp_header.f90\
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_tips.f90
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_vmecbzx.f90
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_igs.f90
+	$(FC) $(FFLAGS) -c $(SRC)gkvp_ring.f90
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_bndry.f90
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_colli.f90
 	$(FC) $(FFLAGS) -c $(SRC)$(FFT).f90 $(INC)
@@ -82,6 +85,7 @@ gkvp:	$(SRC)gkvp_header.f90\
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_colliimp.f90
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_freq.f90
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_zfilter.f90
+	$(FC) $(FFLAGS) -c $(SRC)gkvp_geom.f90
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_exb.f90
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_trans.f90
 	$(FC) $(FFLAGS) -c $(SRC)gkvp_advnc.f90
@@ -101,6 +105,7 @@ gkvp:	$(SRC)gkvp_header.f90\
 			gkvp_tips.o\
 			gkvp_vmecbzx.o\
 			gkvp_igs.o\
+			gkvp_ring.o\
 			gkvp_bndry.o\
 			gkvp_colli.o\
 			$(FFT).o\
@@ -108,6 +113,7 @@ gkvp:	$(SRC)gkvp_header.f90\
 			gkvp_colliimp.o\
 			gkvp_freq.o\
 			gkvp_zfilter.o\
+			gkvp_geom.o\
 			gkvp_exb.o\
 			gkvp_trans.o\
 			gkvp_advnc.o\

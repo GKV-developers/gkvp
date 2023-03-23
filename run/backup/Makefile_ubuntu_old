@@ -1,18 +1,11 @@
-### Fujitsu Fortran Compiler ###
-FC = mpifrtpx
-FFLAGS = -Kfast,parallel # Optimization
-FFLAGS += -X9 # Fortran95
-FFLAGS += -Koptmsg=2 -Nlst=t # Optimization report
-FFLAGS += -fw # Suppress message
-FFLAGS += -Kopenmp #-Nfjomplib # OpenMP
-FFLAGS += -mcmodel=large # Static memory larger than 2GB
-#FFLAGS += -Haefosux -NRtrap #-O0 # Debug
-OPTRPT = 'lst'
-#FFLAGS += -Nfjprof # Fujitsu profiler fapp
-FFLAGS += -Ksimd_nouse_multiple_structures # Specific option for compiler tcs1.2.26 to avoid slowing down GKV
-FFLAGS += -Knosch_pre_ra # Specific option for compiler tcs1.2.26 to avoid slowing down GKV
-INC = 
-LIB =
+#### gfortran + Open-MPI ###
+FC = mpifort
+FFLAGS = -mcmodel=medium -m64 -march=native -mtune=native -O3 -ffast-math # Optimization
+#FFLAGS += -fopenmp # OpenMP
+#FFLAGS += -Wall -Wextra -pedantic -fbacktrace \
+#          -fbounds-check -Wuninitialized -ffpe-trap=invalid,zero,overflow # Debug
+#INC = -I/usr/include
+#LIB = -L/usr/lib
 
 
 PROG = 'gkvp.exe'
@@ -23,21 +16,19 @@ MYL = ../lib/
 MATH = gkvp_math_portable
 
 FFT = gkvp_fft_fftw
-### Usage of FFTW (module load fftw-tune)
 ifeq ($(FFT),gkvp_fft_fftw)
-  #INC += -I$(FFTW_DIR)/include
-  #LIB += -L$(FFTW_DIR)/lib -lfftw3 -lm
-  LIB += -lfftw3 -lm
+  #FFTW_DIR=`spack location -i fftw`
+  FFTW_DIR=/usr
+  INC += -I$(FFTW_DIR)/include
+  LIB += -L$(FFTW_DIR)/lib -lfftw3 -lm
 endif
 
 FILEIO=gkvp_fileio_fortran
 #FILEIO=gkvp_fileio_netcdf
-### Usage of NetCDF (module load netcdf-fortran netcdf-c phdf5)
-### NetCDF does not work on the FLOW supercomputer for now, Jan 17 2021
 ifeq ($(FILEIO),gkvp_fileio_netcdf)
-  #INC += -I$(NETCDF_FORTRAN_DIR)/include -I$(NETCDF_DIR)/include -I$(PHDF5_DIR)/include
-  #LIB += -L$(NETCDF_FORTRAN_DIR)/lib -L$(NETCDF_DIR)/lib -L$(PHDF5_DIR)/lib -lnetcdff -lnetcdf -lhdf5_hl -lhdf5
-  LIB += -lnetcdff -lnetcdf -lhdf5_hl -lhdf5
+  NETCDF_DIR=`spack location -i netcdf-fortran`
+  INC += -I$(NETCDF_DIR)/include
+  LIB += -L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf -lhdf5_hl -lhdf5
 endif
 
 
@@ -124,7 +115,8 @@ gkvp:	$(SRC)gkvp_header.f90\
                         gkvp_main.o\
 			-o $(PROG) $(LIB)
 
-	cp *.o *.mod *.$(OPTRPT) ../src/
+#	cp *.o *.mod *.$(OPTRPT) ../src/
+	cp *.o *.mod ../src/
 	rm -f *.o *.mod *.$(OPTRPT)
 
 clean:

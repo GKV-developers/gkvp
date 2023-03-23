@@ -53,10 +53,12 @@ MPI_procs=32                      # number of MPI processes (= venode*8 for flat
 
 #PBS -v LANG=C
 
+source /etc/profile.d/modules.sh
+
 module load NECNLC-sx
 # module load NECNLC-mpi-sx
 ### For NetCDF
-#module load netcdf-parallelIO-fortran-sx/4.5.2
+module load netcdf-parallelIO-fortran-sx
 
 
 ### Working directory 

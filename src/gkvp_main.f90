@@ -13,9 +13,9 @@ PROGRAM GKV_main
 !         |
 !        colli, colliimp, exb, shearflow
 !         |
-!        bndry, fft, fld, zfilter
+!        bndry, fft, fld, zfilter, geom
 !         |
-!        clock, intgrl, tips, freq, igs, vmecbzx, fileio
+!        clock, intgrl, tips, freq, igs, vmecbzx, ring, fileio
 !         |
 !        mpienv, math
 !         |
@@ -136,7 +136,7 @@ PROGRAM GKV_main
 
       end if
 
-      if (gamma_e /= 0._DP) then
+      if (gamma_e /= 0._DP .and. trim(flag_shearflow) == "remap") then
         call shearflow_kxmap( time, ff, phi, Al, hh )
         if (time > tlim_exb - eps .AND. cflg == 0 ) then 
           write( olog, * ) ""
