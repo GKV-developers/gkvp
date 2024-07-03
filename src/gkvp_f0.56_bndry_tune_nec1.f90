@@ -23,6 +23,10 @@ MODULE GKV_bndry
       bndry_shifts_m_buffin, bndry_shifts_m_sendrecv, bndry_shifts_m_buffout, &
       bndry_vm_sendrecv_v2, bndry_zv_buffin_v2, bndry_zv_sendrecv_v2, bndry_zv_buffout_v2
 
+!> vp-mu
+  public bndry_shifts_m_e, bndry_shifts_m_f
+!< vp-mu
+
 
 CONTAINS
 
@@ -1904,6 +1908,211 @@ CONTAINS
 
 
   END SUBROUTINE bndry_zv_buffout_v2
+
+!> vp-mu
+!--------------------------------------
+  SUBROUTINE bndry_shifts_m_e( ew, ew_b )
+!--------------------------------------
+!     Shift communications in m direction
+
+    complex(kind=DP), intent(in), &
+      dimension(-nx:nx,0:ny,-nz-nzb:nz-1+nzb,0:nm) :: ew
+    complex(kind=DP), intent(inout), &
+      dimension(-nx:nx,0:ny,-nz-nzb:nz-1+nzb,0-nvb:nm+nvb) :: ew_b
+
+    complex(kind=DP), dimension(:,:,:,:), allocatable :: mb1, mb2
+
+    integer  ::  mx, my, iz, im
+
+      allocate( mb1(-nx:nx,0:ny,-nz:nz-1,1:2*nvb) )
+      allocate( mb2(-nx:nx,0:ny,-nz:nz-1,1:2*nvb) )
+
+      do im = 0, nm
+!$OMP do schedule (dynamic)
+        do iz = -nz, nz-1
+          do my = ist_y, iend_y
+            do mx = -nx, nx
+              ew_b(mx,my,iz,im) = ew(mx,my,iz,im)
+            end do
+          end do
+        end do
+!$OMP end do nowait
+      end do
+
+      call bndry_shifts_m_e_buffin( ew_b, mb1, mb2 )
+      call bndry_shifts_m_e_sendrecv( mb1, mb2 )
+      call bndry_shifts_m_e_buffout( mb2, ew_b )
+
+      deallocate( mb1 )
+      deallocate( mb2 )
+
+
+  END SUBROUTINE bndry_shifts_m_e
+
+!--------------------------------------
+  SUBROUTINE bndry_shifts_m_f( ff )
+!--------------------------------------
+
+    complex(kind=DP), intent(inout), &
+      dimension(-nx:nx,0:ny,-nz-nzb:nz-1+nzb,1-nvb:2*nv+nvb,0-nvb:nm+nvb) :: ff
+
+    complex(kind=DP), dimension(:,:,:,:,:), allocatable :: mb1, mb2
+
+      allocate( mb1(-nx:nx,0:ny,-nz:nz-1,1:2*nv,1:2*nvb) )
+      allocate( mb2(-nx:nx,0:ny,-nz:nz-1,1:2*nv,1:2*nvb) )
+
+!$OMP parallel default (none) &
+!$OMP shared(ff,mb1,mb2) &
+      call bndry_shifts_m_buffin ( ff, mb1, mb2 )
+!$OMP barrier
+!$OMP master
+      call bndry_shifts_m_sendrecv ( mb1, mb2 )
+!$OMP end master
+!$OMP barrier
+      call bndry_shifts_m_buffout ( mb2, ff )
+!$OMP end parallel
+
+      deallocate( mb1 )
+      deallocate( mb2 )
+
+  END SUBROUTINE bndry_shifts_m_f
+
+
+!--------------------------------------
+  SUBROUTINE bndry_shifts_m_e_buffin( ff, mb1, mb2 )
+!--------------------------------------
+!     Shift communications in m direction
+
+    complex(kind=DP), intent(inout), &
+      dimension(-nx:nx,0:ny,-nz-nzb:nz-1+nzb,0-nvb:nm+nvb) :: ff
+    complex(kind=DP), intent(out), &
+      dimension(-nx:nx,0:ny,-nz:nz-1,1:2*nvb) :: mb1, mb2
+
+    integer  ::  mx, my, iz, im
+
+
+!$OMP master
+                                           call clock_sta(1371)
+                                         ! call fapp_start("literm_shifts_bufferin",1371,1)
+!$OMP end master
+
+! --- zero clear is required for rankv = 0, nprocv-1 and rankm = 0, nprocm-1
+      do im = 1, 2*nvb
+!$OMP do schedule (dynamic)
+          do iz = -nz, nz-1
+            do my = ist_y, iend_y
+              do mx = -nx, nx
+                mb2(mx,my,iz,im) = ( 0._DP, 0._DP )
+              end do
+            end do
+          end do
+!$OMP end do nowait
+      end do
+
+!$OMP do schedule (dynamic)
+        do iz = -nz, nz-1
+          do my = ist_y, iend_y
+            do mx = -nx, nx
+              do im = 1, nvb
+                mb1(mx,my,iz,im    ) = ff(mx,my,iz,     im-1)
+                mb1(mx,my,iz,im+nvb) = ff(mx,my,iz,nm-nvb+im)
+              end do
+            end do
+          end do
+        end do
+!$OMP end do nowait
+
+
+!$OMP master
+                                         ! call fapp_stop("literm_shifts_bufferin",1371,1)
+                                           call clock_end(1371)
+!$OMP end master
+
+
+  END SUBROUTINE bndry_shifts_m_e_buffin
+
+
+!--------------------------------------
+  SUBROUTINE bndry_shifts_m_e_sendrecv( mb1, mb2 )
+!--------------------------------------
+!     Shift communications in m direction
+
+    complex(kind=DP), intent(in), &
+      dimension(-nx:nx,0:ny,-nz:nz-1,1:2*nvb) :: mb1
+    complex(kind=DP), intent(inout), &
+      dimension(-nx:nx,0:ny,-nz:nz-1,1:2*nvb) :: mb2
+    integer  ::  slngm
+    integer, dimension(4) :: ireq
+    integer, dimension(MPI_STATUS_SIZE,4) :: istatus
+
+
+      slngm = (2*nx+1)*(ny+1)*(2*nz)* nvb
+
+                                           call clock_sta(1372)
+                                         ! call fapp_start("literm_shifts_sendrecv",1372,1)
+!      call MPI_sendrecv( mb1(-nx,0,-nz,1    ), slngm, MPI_DOUBLE_COMPLEX, imdn, 3, &
+!                         mb2(-nx,0,-nz,nvb+1), slngm, MPI_DOUBLE_COMPLEX, imup, 3, &
+!                         sub_comm_world, status, ierr_mpi )
+!
+!      call MPI_sendrecv( mb1(-nx,0,-nz,nvb+1), slngm, MPI_DOUBLE_COMPLEX, imup, 4, &
+!                         mb2(-nx,0,-nz,1    ), slngm, MPI_DOUBLE_COMPLEX, imdn, 4, &
+!                         sub_comm_world, status, ierr_mpi )
+
+      call MPI_irecv( mb2(-nx,0,-nz,nvb+1), slngm, MPI_DOUBLE_COMPLEX, imup, 3, &
+                      sub_comm_world, ireq(1), ierr_mpi )
+      call MPI_irecv( mb2(-nx,0,-nz,    1), slngm, MPI_DOUBLE_COMPLEX, imdn, 4, &
+                      sub_comm_world, ireq(2), ierr_mpi )
+      call MPI_isend( mb1(-nx,0,-nz,    1), slngm, MPI_DOUBLE_COMPLEX, imdn, 3, &
+                      sub_comm_world, ireq(3), ierr_mpi )
+      call MPI_isend( mb1(-nx,0,-nz,nvb+1), slngm, MPI_DOUBLE_COMPLEX, imup, 4, &
+                      sub_comm_world, ireq(4), ierr_mpi )
+      call MPI_waitall( 4, ireq, istatus, ierr_mpi )
+                                         ! call fapp_stop("literm_shifts_sendrecv",1372,1)
+                                           call clock_end(1372)
+
+
+  END SUBROUTINE bndry_shifts_m_e_sendrecv
+
+
+!--------------------------------------
+  SUBROUTINE bndry_shifts_m_e_buffout( mb2, ff )
+!--------------------------------------
+!     Shift communications in m direction
+
+    complex(kind=DP), intent(in), &
+      dimension(-nx:nx,0:ny,-nz:nz-1,1:2*nvb) :: mb2
+    complex(kind=DP), intent(inout), &
+      dimension(-nx:nx,0:ny,-nz-nzb:nz-1+nzb,0-nvb:nm+nvb) :: ff
+
+    integer  ::  mx, my, iz, im
+
+
+!$OMP master
+                                           call clock_sta(1373)
+                                         ! call fapp_start("literm_shifts_bufferout",1373,1)
+!$OMP end master
+
+!$OMP do schedule (dynamic)
+        do iz = -nz, nz-1
+          do my = ist_y, iend_y
+            do mx = -nx, nx
+              do im = 1, nvb
+                ff(mx,my,iz,-nvb-1+im) = mb2(mx,my,iz,im    )
+                ff(mx,my,iz,nm+im    ) = mb2(mx,my,iz,im+nvb)
+              end do
+            end do
+          end do
+        end do
+!$OMP end do nowait
+
+!$OMP master
+                                         ! call fapp_stop("literm_shifts_bufferout",1373,1)
+                                           call clock_end(1373)
+!$OMP end master
+
+
+  END SUBROUTINE bndry_shifts_m_e_buffout
+!< vp-mu
 
 
 END MODULE GKV_bndry

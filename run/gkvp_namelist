@@ -5,7 +5,8 @@
         z_calc="cf4",
         art_diff=0.1d0,
         init_random=.false.,
-        num_triad_diag=0, &end
+        num_triad_diag=0,
+        vp_coord=1, &end
  &triad mxt = 0, myt = 0/
  &equib equib_type = "analytic", &end
  &run_n inum=%%%,

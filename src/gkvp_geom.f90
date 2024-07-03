@@ -474,10 +474,27 @@ CONTAINS
       dm       = mmax / real( nprocm * ( nm+1 ) - 1, kind=DP )
                                           ! --- equal spacing in vperp
 
-      do im = 0, nm
-        global_im = ( nm+1 ) * rankm + im
-        mu(im)    = 0.5_DP * ( dm * real( global_im, kind=DP ) )**2
-      end do
+!> vp-mu
+      if( vp_coord == 1 ) then
+
+        do im = 0, nm
+          global_im = ( nm+1 ) * rankm + im
+          do iz = -nz, nz-1
+            vp(iz,im)  = dm * real( global_im, kind=DP )
+          end do
+        end do
+
+      else
+
+        do im = 0, nm
+          global_im = ( nm+1 ) * rankm + im
+          do iz = -nz, nz-1
+            mu(iz,im) = 0.5_DP * ( dm * real( global_im, kind=DP ) )**2
+          end do
+        end do
+
+      end if
+!< vp-mu
 
 
       do my = ist_y_g, iend_y_g
@@ -1050,7 +1067,14 @@ CONTAINS
             dpara(iz) = dz * q_0 * r_major
 
             do im = 0, nm
-              vp(iz,im)  = sqrt( 2._DP * mu(im) )!* omg(iz) )
+!> vp-mu
+              if( vp_coord == 1 ) then
+                mu(iz,im)  = 0.5_DP * vp(iz,im)**2 !/ omg(iz)
+              else 
+                vp(iz,im)  = sqrt( 2._DP * mu(iz,im) )!* omg(iz) )
+              end if
+              dpp(iz,:,im) = 0._DP
+!< vp-mu
               mir(iz,im) = 0._DP
               do iv = 1, 2*nv
                 vdx(iz,iv,im) = 0._DP
@@ -1058,7 +1082,7 @@ CONTAINS
                 vsy(iz,iv,im) =                                           &
                   - sgn(ranks) * tau(ranks) / Znum(ranks)                 & 
                   * ( R0_Ln(ranks) + R0_Lt(ranks) * ( 0.5_DP*vl(iv)**2    &
-                                           + omg(iz)*mu(im) - 1.5_DP ) )
+                                           + omg(iz)*mu(iz,im) - 1.5_DP ) )
               end do
             end do   ! im loop ends
 
@@ -1076,8 +1100,11 @@ CONTAINS
 
             do im = 0, nm
 
-              vp(iz,im)  = sqrt( 2._DP * mu(im) * omg(iz) )
-              mir(iz,im) = mu(im) * eps_r / ( q_0 * r_major )  &
+!> vp-mu
+              call geom_def_dpp( iz, im, domgdz )
+!< vp-mu
+
+              mir(iz,im) = mu(iz,im) * eps_r / ( q_0 * r_major )  &
                        * ( sin(zz_lab)                                          &
                          + eps_hor * lmmq   * sin( lmmq   * zz_lab - malpha )   &
                          + eps_mor * lmmqm1 * sin( lmmqm1 * zz_lab - malpha )   &
@@ -1085,7 +1112,7 @@ CONTAINS
 
               do iv = 1, 2*nv
                     vdx(iz,iv,im)=                                            &
-                      - ( vl(iv)**2 + omg(iz)*mu(im) ) * eps_rnew / r_major         &
+                      - ( vl(iv)**2 + omg(iz)*mu(iz,im) ) * eps_rnew / r_major         &
                       * ( 0._DP * ( rdeps00 + rdeps1_0 * cos( zz_lab )             &
                              + rdeps2_10 * cos( lmmq   * zz_lab - malpha )          &
                              + rdeps1_10 * cos( lmmqm1 * zz_lab - malpha )          &
@@ -1098,7 +1125,7 @@ CONTAINS
                          ) * ( sgn(ranks) * tau(ranks) / Znum(ranks) )
 
                     vdy(iz,iv,im)=                                            &
-                      - ( vl(iv)**2 + omg(iz)*mu(im) ) * eps_rnew / r_major         &
+                      - ( vl(iv)**2 + omg(iz)*mu(iz,im) ) * eps_rnew / r_major         &
                       * ( 1._DP * ( rdeps00 + rdeps1_0 * cos( zz_lab )             &
                              + rdeps2_10 * cos( lmmq   * zz_lab - malpha )          &
                              + rdeps1_10 * cos( lmmqm1 * zz_lab - malpha )          &
@@ -1113,7 +1140,7 @@ CONTAINS
                     vsy(iz,iv,im) =                                           &
                       - sgn(ranks) * tau(ranks) / Znum(ranks)                 & 
                       * ( R0_Ln(ranks) + R0_Lt(ranks) * ( 0.5_DP*vl(iv)**2    &
-                                               + omg(iz)*mu(im) - 1.5_DP ) )
+                                               + omg(iz)*mu(iz,im) - 1.5_DP ) )
 
               end do
 
@@ -1138,25 +1165,27 @@ CONTAINS
 
             do im = 0, nm
 
-              vp(iz,im)  = sqrt( 2._DP * mu(im) * omg(iz) )
+!> vp-mu
+              call geom_def_dpp( iz, im, domgdz )
+!< vp-mu
 
-              mir(iz,im) = mu(im) * (q_0/q_bar) * domgdz / ( omg(iz)*rootg(iz) )
+              mir(iz,im) = mu(iz,im) * (q_0/q_bar) * domgdz / ( omg(iz)*rootg(iz) )
 
               do iv = 1, 2*nv
                     vdx(iz,iv,im) =                                     &
-                       ( vl(iv)**2 + omg(iz)*mu(im) ) / r_major         &   
+                       ( vl(iv)**2 + omg(iz)*mu(iz,im) ) / r_major         &   
                       * kkx                                             &
                       * ( sgn(ranks) * tau(ranks) / Znum(ranks) )
 
                     vdy(iz,iv,im) =                                     &
-                       ( vl(iv)**2 + omg(iz)*mu(im) ) / r_major         &   
+                       ( vl(iv)**2 + omg(iz)*mu(iz,im) ) / r_major         &   
                       * kky                                             &
                       * ( sgn(ranks) * tau(ranks) / Znum(ranks) )
 
                     vsy(iz,iv,im) =                                           &
                       - sgn(ranks) * tau(ranks) / Znum(ranks)                 &
                       * ( R0_Ln(ranks) + R0_Lt(ranks) * ( 0.5_DP*vl(iv)**2    &
-                                               + omg(iz)*mu(im) - 1.5_DP ) )  &
+                                               + omg(iz)*mu(iz,im) - 1.5_DP ) )  &
                       * (q_bar/q_0)
               end do
 
@@ -1181,25 +1210,27 @@ CONTAINS
 
             do im = 0, nm
 
-              vp(iz,im)  = sqrt( 2._DP * mu(im) * omg(iz) )
+!> vp-mu
+              call geom_def_dpp( iz, im, domgdz )
+!< vp-mu
 
-              mir(iz,im) = mu(im) * domgdz / ( omg(iz)*rootg(iz) )
+              mir(iz,im) = mu(iz,im) * domgdz / ( omg(iz)*rootg(iz) )
 
               do iv = 1, 2*nv
                     vdx(iz,iv,im)=                                              &
-                       ( vl(iv)**2 + omg(iz)*mu(im) ) / ( r_major*omg(iz) )     &
+                       ( vl(iv)**2 + omg(iz)*mu(iz,im) ) / ( r_major*omg(iz) )     &
                       * kkx                                                     &
                       * ( sgn(ranks) * tau(ranks) / Znum(ranks) )
 
                     vdy(iz,iv,im)=                                              &
-                       ( vl(iv)**2 + omg(iz)*mu(im) ) / ( r_major*omg(iz) )     &
+                       ( vl(iv)**2 + omg(iz)*mu(iz,im) ) / ( r_major*omg(iz) )     &
                       * kky                                                     &
                       * ( sgn(ranks) * tau(ranks) / Znum(ranks) )
 
                     vsy(iz,iv,im) =                                           &
                       - sgn(ranks) * tau(ranks) / Znum(ranks)                 &
                       * ( R0_Ln(ranks) + R0_Lt(ranks) * ( 0.5_DP*vl(iv)**2    &
-                                               + omg(iz)*mu(im) - 1.5_DP ) )  
+                                               + omg(iz)*mu(iz,im) - 1.5_DP ) )  
               end do
 
             end do   ! im loop ends
@@ -1223,19 +1254,21 @@ CONTAINS
 
             do im = 0, nm
 
-              vp(iz,im)  = sqrt( 2._DP * mu(im) * omg(iz) )
+!> vp-mu
+              call geom_def_dpp( iz, im, domgdz )
+!< vp-mu
 
-              mir(iz,im) = mu(im) * domgdz / ( omg(iz)*rootg(iz) )
+              mir(iz,im) = mu(iz,im) * domgdz / ( omg(iz)*rootg(iz) )
 
               do iv = 1, 2*nv
                     vdx(iz,iv,im) =                                              &
-                       ( vl(iv)**2 + omg(iz)*mu(im) ) / ( r_major*omg(iz) )      &
+                       ( vl(iv)**2 + omg(iz)*mu(iz,im) ) / ( r_major*omg(iz) )      &
                       * kkx                                                      &
                       * ( sgn(ranks) * tau(ranks) / Znum(ranks) )
 
 
                     vdy(iz,iv,im) =                                              &
-                       ( vl(iv)**2 + omg(iz)*mu(im) ) / ( r_major*omg(iz) )      &
+                       ( vl(iv)**2 + omg(iz)*mu(iz,im) ) / ( r_major*omg(iz) )      &
                       * kky                                                      &
                       * ( sgn(ranks) * tau(ranks) / Znum(ranks) )                &
                      - real(ibprime,kind=DP) * vl(iv)**2 / r_major / omg(iz)**2  & ! grad-p (beta-prime) term 
@@ -1245,7 +1278,7 @@ CONTAINS
                     vsy(iz,iv,im) =                                           &
                       - sgn(ranks) * tau(ranks) / Znum(ranks)                 &
                       * ( R0_Ln(ranks) + R0_Lt(ranks) * ( 0.5_DP*vl(iv)**2    &
-                                               + omg(iz)*mu(im) - 1.5_DP ) )  
+                                               + omg(iz)*mu(iz,im) - 1.5_DP ) )  
               end do
 
             end do   ! im loop ends
@@ -1268,18 +1301,20 @@ CONTAINS
 
             do im = 0, nm
 
-              vp(iz,im)  = sqrt( 2._DP * mu(im) * omg(iz) )
+!> vp-mu
+              call geom_def_dpp( iz, im, domgdz )
+!< vp-mu
 
-              mir(iz,im) = mu(im) * domgdz / ( omg(iz)*rootg(iz) )
+              mir(iz,im) = mu(iz,im) * domgdz / ( omg(iz)*rootg(iz) )
 
               do iv = 1, 2*nv
                     vdx(iz,iv,im) =                                              &
-                       ( vl(iv)**2 + omg(iz)*mu(im) ) / ( r_major*omg(iz) )      &
+                       ( vl(iv)**2 + omg(iz)*mu(iz,im) ) / ( r_major*omg(iz) )      &
                       * kkx                                                      &
                       * ( sgn(ranks) * tau(ranks) / Znum(ranks) )
 
                     vdy(iz,iv,im) =                                              &
-                       ( vl(iv)**2 + omg(iz)*mu(im) ) / ( r_major*omg(iz) )      &
+                       ( vl(iv)**2 + omg(iz)*mu(iz,im) ) / ( r_major*omg(iz) )      &
                       * kky                                                      &
                       * ( sgn(ranks) * tau(ranks) / Znum(ranks) )                &
                      - real(ibprime,kind=DP) * vl(iv)**2 / r_major / omg(iz)**2  & ! grad-p (beta-prime) term 
@@ -1289,7 +1324,7 @@ CONTAINS
                     vsy(iz,iv,im) =                                           &
                       - sgn(ranks) * tau(ranks) / Znum(ranks)                 &
                       * ( R0_Ln(ranks) + R0_Lt(ranks) * ( 0.5_DP*vl(iv)**2    &
-                                               + omg(iz)*mu(im) - 1.5_DP ) )  
+                                               + omg(iz)*mu(iz,im) - 1.5_DP ) )  
               end do
 
             end do   ! im loop ends
@@ -1315,26 +1350,28 @@ CONTAINS
 ! r_major = 1 is assumed as the equilibrium length unit
 ! B on the equatorial plane is also unity
 
-              vp(iz,im)  = sqrt( 2._DP * mu(im) * omg(iz) )
+!> vp-mu
+              call geom_def_dpp( iz, im, domgdz )
+!< vp-mu
 
-              !mir(iz,im) = mu(im) * ub_dot_grdb
-              mir(iz,im) = mu(im) * domgdz / ( omg(iz)*rootg(iz) )
+              !mir(iz,im) = mu(iz,im) * ub_dot_grdb
+              mir(iz,im) = mu(iz,im) * domgdz / ( omg(iz)*rootg(iz) )
 
               do iv = 1, 2*nv
                 vdx(iz,iv,im) = 0._DP
                    
                 !vdy(iz,iv,im) =                                        &
-                !        ( vl(iv)**2 + omg(iz)*mu(im) )                 &
+                !        ( vl(iv)**2 + omg(iz)*mu(iz,im) )                 &
                 !      * ( ub_crs_grdb / omg(iz)**2 ) * sqrt( gg(2,2) ) &
                 !      * ( sgn(ranks) * tau(ranks) / Znum(ranks) )      ! ion's vdy is negative y direction
                 vdy(iz,iv,im) =                                              &
-                        ( vl(iv)**2 + omg(iz)*mu(im) ) / ( r_major*omg(iz) ) &
+                        ( vl(iv)**2 + omg(iz)*mu(iz,im) ) / ( r_major*omg(iz) ) &
                       * kky                                                  &
                       * ( sgn(ranks) * tau(ranks) / Znum(ranks) ) 
                 vsy(iz,iv,im)=                                             &
                       - sgn(ranks) * tau(ranks) / Znum(ranks)              &
                       * ( R0_Ln(ranks) + R0_Lt(ranks) * ( 0.5_DP*vl(iv)**2 &
-                                               + omg(iz)*mu(im) - 1.5_DP ) ) ! ion's vsy is negative y directuin
+                                               + omg(iz)*mu(iz,im) - 1.5_DP ) ) ! ion's vsy is negative y directuin
               end do
 
             end do   ! im loop ends
@@ -1360,7 +1397,7 @@ CONTAINS
           do im = 0, nm
             do my = ist_y, iend_y
               do mx = -nx, nx
-                kmo           = sqrt( 2._DP * ksq(mx,my,iz) * mu(im) / omg(iz) ) &
+                kmo           = sqrt( 2._DP * ksq(mx,my,iz) * mu(iz,im) / omg(iz) ) &
                                * dsqrt( tau(ranks)*Anum(ranks) ) / Znum(ranks)
                 call math_j0( kmo, j0(mx,my,iz,im) )
                 call math_j1( kmo, j1(mx,my,iz,im) )
@@ -1392,7 +1429,14 @@ CONTAINS
 
         if ( vel_rank == 0 ) then
           do iz = -nz, nz-1
-            dvp(iz)  = sqrt( 2._DP * (0.5_DP * dm**2) * omg(iz) )
+!> vp-mu
+!           dvp(iz)  = sqrt( 2._DP * (0.5_DP * dm**2) * omg(iz) )
+              if( vp_coord == 1 ) then
+                dvp(iz) = dm
+              else 
+                dvp(iz)  = sqrt( 2._DP * (0.5_DP * dm**2) * omg(iz) )
+              end if
+!< vp-mu
           end do
         end if
         call MPI_Bcast( dvp, 2*nz, MPI_DOUBLE_PRECISION, 0, &
@@ -1401,7 +1445,7 @@ CONTAINS
         do im = 0, nm
           do iv = 1, 2*nv
             do iz = -nz, nz-1
-              fmx(iz,iv,im)   = exp( - 0.5_DP * vl(iv)**2 - omg(iz) * mu(im) ) &
+              fmx(iz,iv,im)   = exp( - 0.5_DP * vl(iv)**2 - omg(iz) * mu(iz,im) ) &
                               / sqrt( twopi**3 )
             end do
           end do
@@ -1514,6 +1558,35 @@ CONTAINS
         deallocate( nw )
 
   END SUBROUTINE geom_set_operators
+
+!--------------------------------------
+  SUBROUTINE geom_def_dpp( iz, im, domgdz )
+!--------------------------------------
+    implicit none
+
+    real(kind=DP), intent(in) :: domgdz
+    integer, intent(in) :: iz, im
+
+    integer :: iv
+
+
+      if( vp_coord == 1 ) then
+
+        mu(iz,im)  = 0.5_DP * vp(iz,im)**2 / omg(iz)
+        do iv = 1, 2*nv
+          dpp(iz,iv,im) = 0.5_DP * vl(iv) * vp(iz,im) * domgdz &
+                        / ( omg(iz) * omg(iz) * rootg(iz) )
+        end do
+
+      else 
+
+        vp(iz,im)  = sqrt( 2._DP * mu(iz,im) * omg(iz) )
+        dpp(iz,:,im) = 0._DP
+
+      end if
+
+
+  END SUBROUTINE geom_def_dpp
 
 !--------------------------------------
   SUBROUTINE geom_reset_time(time_shearflow)
