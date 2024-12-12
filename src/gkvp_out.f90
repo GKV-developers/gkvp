@@ -1211,7 +1211,10 @@ END SUBROUTINE update_dh
           do iz = -nz, nz-1
             do my = ist_y, iend_y
               do mx = -nx, nx
-                wf(mx,my,iz,iv,im) = mu(im) * omg(iz) * ff(mx,my,iz,iv,im) * j0(mx,my,iz,im)
+!> vp-mu
+!!!                wf(mx,my,iz,iv,im) = mu(im) * omg(iz) * ff(mx,my,iz,iv,im) * j0(mx,my,iz,im)
+                wf(mx,my,iz,iv,im) = mu(iz,im) * omg(iz) * ff(mx,my,iz,iv,im) * j0(mx,my,iz,im)
+!< vp-mu
               end do
             end do
           end do
@@ -1241,7 +1244,10 @@ END SUBROUTINE update_dh
           do iz = -nz, nz-1
             do my = ist_y, iend_y
               do mx = -nx, nx
-                wf(mx,my,iz,iv,im) = vl(iv) * mu(im) * omg(iz) * ff(mx,my,iz,iv,im) * j0(mx,my,iz,im)
+!> vp-mu
+!!!                wf(mx,my,iz,iv,im) = vl(iv) * mu(im) * omg(iz) * ff(mx,my,iz,iv,im) * j0(mx,my,iz,im)
+                wf(mx,my,iz,iv,im) = vl(iv) * mu(iz,im) * omg(iz) * ff(mx,my,iz,iv,im) * j0(mx,my,iz,im)
+!< vp-mu
               end do
             end do
           end do

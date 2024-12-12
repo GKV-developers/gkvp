@@ -27,6 +27,10 @@ MODULE GKV_advnc
   use GKV_tips,  only: tips_reality
   use GKV_geom, only: geom_increment_time
 
+!> vp-mu
+  use GKV_bndry, only: bndry_shifts_m_e, bndry_shifts_m_f
+!< vp-mu
+
   implicit none
 
   private
@@ -428,6 +432,12 @@ CONTAINS
       deallocate( vb1o )
       deallocate( vb2o )
 
+!> vp-mu
+    if ( vp_coord == 1 ) then
+      call literm_vp ( ff, psi, dh )
+    end if
+!< vp-mu
+
 
   END SUBROUTINE caldlt_linear
 
@@ -650,6 +660,127 @@ CONTAINS
 
 
   END SUBROUTINE literm_zv
+
+
+!> vp-mu
+!--------------------------------------
+  SUBROUTINE literm_vp ( ff, psi, lf )
+!--------------------------------------
+!     z-derivative of ff
+
+    complex(kind=DP), intent(inout), &
+      dimension(-nx:nx,0:ny,-nz-nzb:nz-1+nzb,1-nvb:2*nv+nvb,0-nvb:nm+nvb) :: ff
+    complex(kind=DP), intent(in), &
+      dimension(-nx:nx,0:ny,-nz-nzb:nz-1+nzb,0:nm) :: psi
+    complex(kind=DP), intent(inout), &
+      dimension(-nx:nx,0:ny,-nz:nz-1,1:2*nv,0:nm) :: lf
+
+    complex(kind=DP), dimension(:,:,:,:), allocatable :: psi_b
+
+    real(kind=DP), dimension(-nz:nz-1) :: cefm
+    real(kind=DP) :: cs1, cs2
+    integer  ::  mx, my, iz, iv, im
+
+
+                                           call clock_sta(1320)
+                                         ! call fapp_start("literm_perp",1320,1)
+
+      allocate( psi_b(-nx:nx,0:ny,-nz-nzb:nz-1+nzb,0-nvb:nm+nvb) )
+
+
+      cs1    = sgn(ranks) * Znum(ranks) / tau(ranks)
+      cs2    = sqrt( tau(ranks) / Anum(ranks) )
+
+      cefm(:) = 1._DP / ( 12._DP * dvp(:) ) * sqrt( tau(ranks) / Anum(ranks) )
+
+
+      call bndry_shifts_m_e( psi, psi_b )
+      call bndry_shifts_m_f( ff )
+
+
+      if ( rankm /= 0 ) then
+
+
+      do im = 0, nm
+        do iv = 1, 2*nv
+          do iz = -nz, nz-1
+            do my = ist_y, iend_y
+              do mx = -nx, nx
+                lf(mx,my,iz,iv,im) = lf(mx,my,iz,iv,im)       &
+                     - dpp(iz,iv,im) * cefm(iz)               &
+                       * ( -         ff(mx,my,iz,iv,im+2)     &
+                           + 8._DP * ff(mx,my,iz,iv,im+1)     &
+                           - 8._DP * ff(mx,my,iz,iv,im-1)     &
+                           +         ff(mx,my,iz,iv,im-2)     &
+                           + cs1 * fmx(iz,iv,im) * (          &
+                           -         psi_b(mx,my,iz,im+2)     &
+                           + 8._DP * psi_b(mx,my,iz,im+1)     &
+                           - 8._DP * psi_b(mx,my,iz,im-1)     &
+                           +         psi_b(mx,my,iz,im-2) ) )
+              end do
+            end do
+          end do
+        end do
+      end do
+
+      else
+
+      im = 1
+
+        do iv = 1, 2*nv
+          do iz = -nz, nz-1
+            do my = ist_y, iend_y
+              do mx = -nx, nx
+                lf(mx,my,iz,iv,im) = lf(mx,my,iz,iv,im)       &
+                     - dpp(iz,iv,im) * cefm(iz)               &
+                       * ( -         ff(mx,my,iz,iv,im+2)     &
+                           + 8._DP * ff(mx,my,iz,iv,im+1)     &
+                           - 8._DP * ff(mx,my,iz,iv,im-1)     &
+                           +         ff(mx,my,iz,iv,im  )     &
+                           + cs1 * fmx(iz,iv,im) * (          &
+                           -         psi_b(mx,my,iz,im+2)     &
+                           + 8._DP * psi_b(mx,my,iz,im+1)     &
+                           - 8._DP * psi_b(mx,my,iz,im-1)     &
+                           +         psi_b(mx,my,iz,im  ) ) )
+              end do
+            end do
+          end do
+        end do
+
+      do im = 2, nm
+        do iv = 1, 2*nv
+          do iz = -nz, nz-1
+            do my = ist_y, iend_y
+              do mx = -nx, nx
+                lf(mx,my,iz,iv,im) = lf(mx,my,iz,iv,im)       &
+                     - dpp(iz,iv,im) * cefm(iz)               &
+                       * ( -         ff(mx,my,iz,iv,im+2)     &
+                           + 8._DP * ff(mx,my,iz,iv,im+1)     &
+                           - 8._DP * ff(mx,my,iz,iv,im-1)     &
+                           +         ff(mx,my,iz,iv,im-2)     &
+                           + cs1 * fmx(iz,iv,im) * (          &
+                           -         psi_b(mx,my,iz,im+2)     &
+                           + 8._DP * psi_b(mx,my,iz,im+1)     &
+                           - 8._DP * psi_b(mx,my,iz,im-1)     &
+                           +         psi_b(mx,my,iz,im-2) ) )
+              end do
+            end do
+          end do
+        end do
+      end do
+
+
+      end if
+
+      deallocate( psi_b )
+
+                                         ! call fapp_stop("literm_perp",1320,1)
+                                           call clock_end(1320)
+
+
+  END SUBROUTINE literm_vp
+!< vp-mu
+
 
 
 END MODULE GKV_advnc

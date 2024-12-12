@@ -45,7 +45,7 @@ MODULE GKV_header
 
   integer, parameter :: nxw = 20, nyw = 20
   integer, parameter :: nx = 4, global_ny = 1 ! 2/3 de-aliasing rule
-  integer, parameter :: global_nz = 12, global_nv = 24, global_nm = 7
+  integer, parameter :: global_nz = 12, global_nv = 24, global_nm = 31
 
   integer, parameter :: nzb = 2, &  ! the number of ghost grids in z
                         nvb = 2     ! the number of ghost grids in v and m
@@ -153,8 +153,12 @@ MODULE GKV_header
   real(kind=DP), dimension(0:ny)            :: ky
   real(kind=DP), dimension(-nz:nz-1)        :: zz, omg
   real(kind=DP), dimension(1:2*nv)          :: vl
-  real(kind=DP), dimension(0:nm)            :: mu
-  real(kind=DP), dimension(-nz:nz-1,0:nm)   :: vp, mir
+!> vp-mu
+!  real(kind=DP), dimension(0:nm)            :: mu
+!  real(kind=DP), dimension(-nz:nz-1,0:nm)   :: vp, mir
+  real(kind=DP), dimension(-nz:nz-1,0:nm)   :: vp, mir, mu
+  real(kind=DP), dimension(-nz:nz-1,1:2*nv,0:nm) :: dpp ! the operator with 0.5*vl*vp*d/d(vp)
+!< vp-mu
   real(kind=DP), dimension(-nz:nz-1)        :: dvp
   real(kind=DP), dimension(-nz:nz-1)        :: dpara, rootg
 
@@ -195,6 +199,9 @@ MODULE GKV_header
 
   integer :: num_triad_diag
 
+!> vp-mu
+  integer :: vp_coord
+!< vp-mu
 
 !--------------------------------------
 !  Parameters for numerical settings

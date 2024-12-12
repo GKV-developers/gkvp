@@ -35,7 +35,9 @@ MODULE GKV_colliimp
                         ! end if
                         !%%%%%%%%%%%%
   real(kind=DP), save :: gvl(1:2*global_nv)
-  real(kind=DP), save :: gmu(0:global_nm)
+!> vp-mu
+  real(kind=DP), save :: gmu(0:global_nm,-nz:nz-1)
+!< vp-mu
   real(kind=DP), save :: gvp(0:global_nm,-nz:nz-1)
   real(kind=DP), save :: gfmx(1:2*global_nv,0:global_nm,-nz:nz-1)
   real(kind=DP), save, &
@@ -89,20 +91,35 @@ CONTAINS
       end do
 
       dm = vmax / real( nprocm * ( nm+1 ) - 1, kind=DP )
-      do im = 0, global_nm
-        gmu(im) = 0.5_DP * ( dm * real( im, kind=DP ) )**2
-      end do
 
-      do iz = -nz, nz-1
-        do im = 0, global_nm
-          gvp(im,iz)  = sqrt( 2._DP * gmu(im) * omg(iz) )
+!> vp-mu
+      if( vp_coord == 1 ) then
+
+        do iz = -nz, nz-1
+          do im = 0, global_nm
+            gvp(im,iz) = dm * real( im, kind=DP )
+            gmu(im,iz) = 0.5_DP * gvp(im,iz)**2 / omg(iz)
+          end do
         end do
-      end do
+
+      else
+
+        do iz = -nz, nz-1
+          do im = 0, global_nm
+            gmu(im,iz) = 0.5_DP * ( dm * real( im, kind=DP ) )**2
+            gvp(im,iz) = sqrt( 2._DP * gmu(im,iz) * omg(iz) )
+          end do
+        end do
+
+      end if
+!< vp-mu
 
       do iz = -nz, nz-1
         do im = 0, global_nm
           do iv = 1, 2*global_nv
-            gfmx(iv,im,iz) = exp( - 0.5_DP * gvl(iv)**2 - omg(iz) * gmu(im) ) &
+!> vp-mu
+            gfmx(iv,im,iz) = exp( - 0.5_DP * gvl(iv)**2 - omg(iz) * gmu(im,iz) ) &
+!< vp-mu
                            / sqrt( twopi**3 )
           end do
         end do
@@ -116,7 +133,9 @@ CONTAINS
           do iz = -nz, nz-1
             do is = 0, ns-1
               do im = 0, global_nm
-                kmo = sqrt( 2._DP * ksq(mx,my,iz) * gmu(im) / omg(iz) ) &
+!> vp-mu
+                kmo = sqrt( 2._DP * ksq(mx,my,iz) * gmu(im,iz) / omg(iz) ) &
+!< vp-mu
                     * sqrt( tau(is)*Anum(is) ) / Znum(is)
                 call math_j0( kmo, gj0(im,is,iz,ibuff) )
                 call math_j1( kmo, gj1(im,is,iz,ibuff) )

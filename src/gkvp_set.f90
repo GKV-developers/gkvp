@@ -107,7 +107,10 @@ CONTAINS
 
     namelist /cmemo/ memo
     namelist /calct/ calc_type, z_bound, z_filt, z_calc, art_diff, &
-                     init_random, num_triad_diag
+!> vp-mu
+!                     init_random, num_triad_diag
+                     init_random, num_triad_diag, vp_coord
+!< vp-mu
     namelist /equib/ equib_type
     namelist /run_n/ inum, ch_res
     namelist /files/ f_log, f_hst, f_phi, f_fxv, f_cnt
@@ -218,6 +221,7 @@ CONTAINS
       write( olog, * ) "# Finite difference scheme in zz : ", trim(z_calc)
       write( olog, * ) "# Artificial diffusion in zz     : ", art_diff
       write( olog, * ) "# Number of triad transfer diag. : ", num_triad_diag
+      write( olog, * ) "# Velocity space coordinate (=1 for vp, others for mu) : ", vp_coord
       write( olog, * ) "# Type of equib. : ", trim(equib_type)
       write( olog, * ) ""
       write( olog, * ) "# Run number = ", inum
