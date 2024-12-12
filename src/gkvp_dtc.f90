@@ -48,6 +48,10 @@ MODULE GKV_dtc
     real(kind=DP) :: cs, dx, dy, kvd
     integer :: mx, my, iz, iv, im, is
 
+!> vp-mu
+    real(kind=DP) :: dt_vp, dpp_max, dpp_max2
+!< vp-mu
+
 
       ksq_max0 = 0._DP
       ksq_max  = 0._DP
@@ -103,6 +107,23 @@ MODULE GKV_dtc
                           MPI_MAX, MPI_COMM_WORLD, ierr_mpi )
       mir_max2 = max(mir_max2, 1.d-20)
       dt_vl = courant_num * dv / mir_max2
+
+!> vp-mu
+      dpp_max = 0._DP
+      do im = 0, nm
+        do iv = 1, 2*nv
+          do iz = -nz, nz-1
+            if ( dpp_max < cs * abs(dpp(iz,iv,im)) / dvp(iz) ) then
+              dpp_max = cs * abs(dpp(iz,iv,im)) / dvp(iz)
+            end if
+          end do
+        end do
+      end do
+      call MPI_Allreduce( dpp_max, dpp_max2, 1, MPI_DOUBLE_PRECISION, &
+                          MPI_MAX, MPI_COMM_WORLD, ierr_mpi )
+      dpp_max2 = max(dpp_max2, 1.d-20)
+      dt_vp = courant_num / dpp_max2 * 0.25d0 ! a factor of 1/4 is added
+!< vp-mu
 
       if ( trim(col_type) == "LB" ) then
 
@@ -180,7 +201,9 @@ MODULE GKV_dtc
       end if
 
 
-      dt_linear = min( dt_perp, dt_zz, dt_vl )
+!> vp-mu
+      dt_linear = min( dt_perp, dt_zz, dt_vl, dt_vp )
+!< vp-mu
 
       if (trim(time_advnc) == "rkg4") then
 
@@ -233,6 +256,9 @@ MODULE GKV_dtc
         write( olog, * ) " # dt_perp      = ", dt_perp
         write( olog, * ) " # dt_zz        = ", dt_zz
         write( olog, * ) " # dt_vl        = ", dt_vl
+!> vp-mu
+        write( olog, * ) " # dt_vp        = ", dt_vp
+!< vp-mu
         write( olog, * ) " # dt_col       = ", dt_col
         write( olog, * ) " # dt_linear    = ", dt_linear
         write( olog, * ) " # dt_max       = ", dt_max

@@ -1559,6 +1559,7 @@ CONTAINS
 
   END SUBROUTINE geom_set_operators
 
+!> vp-mu
 !--------------------------------------
   SUBROUTINE geom_def_dpp( iz, im, domgdz )
 !--------------------------------------
@@ -1587,6 +1588,7 @@ CONTAINS
 
 
   END SUBROUTINE geom_def_dpp
+!< vp-mu
 
 !--------------------------------------
   SUBROUTINE geom_reset_time(time_shearflow)
