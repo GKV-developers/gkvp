@@ -1,4 +1,4 @@
- &cmemo memo="GKV-plus f0.61 developed for pre-exa-scale computing", &end
+ &cmemo memo="GKV-plus f0.64 developed for pre-exa-scale computing", &end
  &calct calc_type="lin_freq",
         z_bound="outflow",
         z_filt="off",

@@ -90,7 +90,7 @@ MODULE GKV_dtc
       cs = sqrt( tau(ranks) / Anum(ranks) )
       vl_max = 0._DP
       do iz = -nz, nz-1
-        if ( vl_max < cs * vmax / dpara(iz) ) vl_max = cs * vmax / dpara(iz)
+        if ( vl_max < cs * vmax / abs(dpara(iz)) ) vl_max = cs * vmax / abs(dpara(iz))
       end do
       call MPI_Allreduce( vl_max, vl_max2, 1, MPI_DOUBLE_PRECISION, &
                           MPI_MAX, MPI_COMM_WORLD, ierr_mpi )

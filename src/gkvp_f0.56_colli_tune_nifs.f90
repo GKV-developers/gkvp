@@ -28,7 +28,7 @@ CONTAINS
 
 
 !--------------------------------------
-  SUBROUTINE colli_set_param (q0, eps_r, nust)
+  SUBROUTINE colli_set_param (q_0, eps_r, nust)
 !-------------------------------------------------------------------------------
 !
 !    Set parameters for GK collision term
@@ -41,7 +41,7 @@ CONTAINS
                                 ee      = 4.80320425d-10, & ! elementary charge in esu
                                 ev2erg  = 1.60217657d-12    ! erg/eV  (cf. 1J = 10^7 erg)
     
-    real(kind=DP),                    intent(in)  :: q0, eps_r
+    real(kind=DP),                    intent(in)  :: q_0, eps_r
     real(kind=DP), dimension(0:ns-1,0:ns-1), intent(out) :: nust
 
     real(kind=DP), dimension(0:ns-1)        :: tmpr, dens, freq_factor
@@ -128,7 +128,7 @@ CONTAINS
           cxi(is1,is2)   =  calpha(is1,is2) * ( ctheta(is1,is2) - 1._DP ) * ctauiv(is1,is2)   &
                              / dsqrt(1._DP + calpha(is1,is2)**2) 
 
-         nust(is1,is2)   = q0*(ctauiv(is1,is2)/dsqrt(2._DP))/(eps_r**1.5*dsqrt(tau(is1)/Anum(is1)))
+         nust(is1,is2)   = abs(q_0)*(ctauiv(is1,is2)/dsqrt(2._DP))/(eps_r**1.5*dsqrt(tau(is1)/Anum(is1)))
 
       end do
     end do

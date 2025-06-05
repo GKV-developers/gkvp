@@ -1,3 +1,4 @@
+Updated for gkvp_f0.63                                  S. Maeyama     Dec 2024
 Updated for gkvp_f0.62                                  S. Maeyama   March 2023
 Updated for gkvp_f0.61                                  S. Maeyama   March 2021
 Updated for gkvp_f0.55                                   M. Nakata     Dec 2019
@@ -56,6 +57,9 @@ init_random:           - Switch on/off random number for initialization.
 
 num_triad_diag:        - Number of triad transfer diagnostics, which should be 
                          consistent with the number of "&triad mxt=**,myt=**/".
+
+vp_coord:   "1"        - Use (vl,vp) coordinates
+            "0"        - Use (vl,mu) coordinates
 
 &triad mxt=**,myt=**/  - Diagnosed mode number of triad transfer analysis.
                          Add lines of "&triad mxt=**,myt=**/" as desired.

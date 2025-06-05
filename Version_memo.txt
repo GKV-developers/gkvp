@@ -1,3 +1,13 @@
+gkvp_f0.64                                              S. Maeyama     June 2025
+1) Zarr store IO interface is implemented in src/gkvp_fileio_zarr.f90.
+
+
+
+gkvp_f0.63                                              S. Maeyama     Dec 2024
+1) vp_coord = 1 is added for the choice of velocity-space coordinates.
+
+
+
 gkvp_f0.62                                              S. Maeyama     Mar 2023
 1) equib_type = "ring" is added for ring dipole geometry.
 

@@ -5,6 +5,9 @@ MODULE GKV_bndry
 !
 !    Update history of gkvp_bndry.f90
 !    --------------
+!      gkvp_f0.63 (S. Maeyama, Dec 2023)
+!        - Choice of vp_coord (perpendicular velocity coordinate) is added.
+!        - Subroutines bndry_shifts_m_e and bndry_shifts_m_f for literm_vp.
 !      gkvp_f0.57 (S. Maeyama, Oct 2020)
 !        - Version number f0.57 is removed from filename.
 !
@@ -232,7 +235,8 @@ CONTAINS
                   mwn   = mx + dj(my)          ! --- mw = mx + dj for the negative-z 
 
                   if( abs(mwn) > nx ) then
-                    if ( vl(iv) > 0._DP ) then ! inflow
+                    !!!if ( vl(iv) > 0._DP ) then ! inflow
+                    if ( vl(iv)/dpara(-nz) > 0._DP ) then ! inflow
                       do iz = 0, nzb-1
                         ff(mx,my,-nz-nzb+iz,iv) = ( 0._DP, 0._DP )
                       end do
@@ -307,7 +311,8 @@ CONTAINS
                   mwp   = mx - dj(my)          ! --- mw = mx - dj for the positive-z 
 
                   if( abs(mwp) > nx ) then
-                    if ( vl(iv) > 0._DP ) then ! outflow
+                    !!!if ( vl(iv) > 0._DP ) then ! outflow
+                    if ( vl(iv)/dpara(nz-1) > 0._DP ) then ! outflow
                       ff(mx,my,nz  ,iv) =   ff(mx,my,nz-1,iv)
                       ff(mx,my,nz+1,iv) = - ff(mx,my,nz-2,iv) + 2._DP * ff(mx,my,nz-1,iv)
                     else                       ! inflow
@@ -1083,7 +1088,8 @@ CONTAINS
                   mwn   = mx + dj(my)          ! --- mw = mx + dj for the negative-z 
 
                   if( abs(mwn) > nx ) then
-                    if ( vl(iv) > 0._DP ) then ! inflow
+                    !!!if ( vl(iv) > 0._DP ) then ! inflow
+                    if ( vl(iv)/dpara(-nz) > 0._DP ) then ! inflow
                       do iz = 0, nzb-1
                         ff(mx,my,-nz-nzb+iz,iv) = ( 0._DP, 0._DP )
                       end do
@@ -1154,7 +1160,8 @@ CONTAINS
                   mwp   = mx - dj(my)          ! --- mw = mx - dj for the positive-z 
 
                   if( abs(mwp) > nx ) then
-                    if ( vl(iv) > 0._DP ) then ! outflow
+                    !!!if ( vl(iv) > 0._DP ) then ! outflow
+                    if ( vl(iv)/dpara(nz-1) > 0._DP ) then ! outflow
                       ff(mx,my,nz  ,iv) =   ff(mx,my,nz-1,iv)
                       ff(mx,my,nz+1,iv) = - ff(mx,my,nz-2,iv) + 2._DP * ff(mx,my,nz-1,iv)
                     else                       ! inflow

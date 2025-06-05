@@ -5,6 +5,9 @@ MODULE GKV_advnc
 !
 !    Update history of gkvp_advnc.f90
 !    --------------
+!      gkvp_f0.63 (S. Maeyama, Dec 2023)
+!        - Choice of vp_coord (perpendicular velocity coordinate) is added.
+!        - Subroutine literm_vp treats additional term.
 !      gkvp_f0.62 (S. Maeyama, Mar 2023)
 !        - Time-dependent metrics for rotating flux-tube model is implemented.
 !          See lines at "!%%% For shearflow rotating flux tube model %%%".

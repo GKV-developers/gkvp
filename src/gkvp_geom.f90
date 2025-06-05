@@ -5,6 +5,11 @@ MODULE GKV_geom
 !
 !    Update history of gkvp_geom.f90
 !    --------------
+!      gkvp_f0.64 (S. Maeyama, June 2025)
+!        - For adiabatic model for ITG-ae or ETG-ai (nprocs=1,sgn(0)>0),
+!          lambda_i=0 and beta=0 are overwritten.
+!      gkvp_f0.63 (S. Maeyama, Dec 2023)
+!        - Choice of vp_coord (perpendicular velocity coordinate) is added.
 !      gkvp_f0.62 (S. Maeyama, Mar 2023)
 !        - First implementation.
 !        - Geometric constants, which had been set in gkvp_set.f90, are moved.
@@ -196,6 +201,14 @@ CONTAINS
             eta(is) = 1.d+20
           end if
         end do
+
+
+        if ( ns == 1 ) then ! --- adiabatic model for ITG-ae or ETG-ai
+          if ( sgn(0) > 0._DP ) then  ! --- ITG-ae
+            lambda_i = 0._DP
+            beta = 0._DP
+          end if
+        end if
 
 
         write( olog, * ) " # Physical parameters"
