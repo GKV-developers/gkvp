@@ -18,6 +18,8 @@ MODULE GKV_header
 !
 !    Update history
 !    --------------
+!      gkvp_f0.63 (S. Maeyama, Dec 2023)
+!        - Choice of vp_coord (perpendicular velocity coordinate) is added.
 !      gkvp_f0.62 (S. Maeyama, Mar 2023)
 !        - flag_shearflow = "rotating" is set as a default. Alternatively,
 !          flag_shaerflow = "remap" is still available for time-discontinuous
@@ -221,14 +223,15 @@ MODULE GKV_header
 ! --- unit numbers for I/O
   integer, parameter :: inml = 5,  & 
                         olog = 10, &
-                        icnt = 20, &
-                        ophi = 30, &
-                        oAl  = 31, &
-                        omom = 32, &
-                        otrn = 33, &
-                        otri = 34, &
-                        ofxv = 40, &
-                        ocnt = 50, &
+                        ojsn = 11, &
+                        icnt = 20, icnt_t = 201, &
+                        ophi = 30, ophi_t = 301, &
+                        oAl  = 31, oAl_t  = 311, &
+                        omom = 32, omom_t = 321, &
+                        otrn = 33, otrn_t = 331, &
+                        otri = 34, otri_t = 341, &
+                        ofxv = 40, ofxv_t = 401, &
+                        ocnt = 50, ocnt_t = 501, &
                         odtc = 59, &
                         oeng = 60, &
                         omen = 61, &

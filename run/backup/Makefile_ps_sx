@@ -28,6 +28,7 @@ ifeq ($(FFT),gkvp_f0.56_fft_fftw_tune2r_0813)
 endif
 
 FILEIO=gkvp_fileio_fortran
+#FILEIO=gkvp_fileio_zarr
 #FILEIO=gkvp_fileio_netcdf
 ### Usage of NetCDF (module load netcdf-parallelIO-fortran-sx)
 ifeq ($(FILEIO),gkvp_fileio_netcdf)

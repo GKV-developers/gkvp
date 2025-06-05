@@ -5,6 +5,8 @@ MODULE GKV_fileio
 !
 !    Update history of gkvp_fileio_netcdf.f90
 !    --------------
+!      gkvp_f0.64 (S. Maeyama, June 2025)
+!        - vp_coord option supported.
 !      gkvp_f0.60 (S. Maeyama, Jan 2021)
 !        - NetCDF binary I/O interface by Fujitsu.
 !
@@ -157,7 +159,7 @@ CONTAINS
 
     integer :: ierr_nf90
     integer :: counter, i
-    integer :: MPI_GROUP_WORLD, new_group, new_comm, ierr_mpi
+    integer :: MPI_GROUP_WORLD, new_group, ierr_mpi
     integer :: phi_tf(1)
     integer, allocatable :: rank_list(:), phi_tf_list(:)
 
@@ -225,7 +227,7 @@ CONTAINS
 
     integer :: ierr_nf90
     integer :: counter, i
-    integer :: MPI_GROUP_WORLD, new_group, new_comm, ierr_mpi
+    integer :: MPI_GROUP_WORLD, new_group, ierr_mpi
     integer :: Al_tf(1)
     integer, allocatable :: rank_list(:), Al_tf_list(:)
 
@@ -293,7 +295,7 @@ CONTAINS
 
     integer :: ierr_nf90
     integer :: counter, i
-    integer :: MPI_GROUP_WORLD, new_group, new_comm, ierr_mpi
+    integer :: MPI_GROUP_WORLD, new_group, ierr_mpi
     integer :: mom_tf(1)
     integer, allocatable :: rank_list(:), mom_tf_list(:)
 
@@ -363,7 +365,7 @@ CONTAINS
 
     integer :: ierr_nf90
     integer :: counter, i
-    integer :: MPI_GROUP_WORLD, new_group, new_comm, ierr_mpi
+    integer :: MPI_GROUP_WORLD, new_group, ierr_mpi
     integer :: trn_tf(1)
     integer, allocatable :: rank_list(:), trn_tf_list(:)
 
@@ -496,7 +498,7 @@ CONTAINS
 
     integer :: ierr_nf90
     integer :: counter, i
-    integer :: MPI_GROUP_WORLD, new_group, new_comm, ierr_mpi
+    integer :: MPI_GROUP_WORLD, new_group, ierr_mpi
     integer :: tri_tf(1)
     integer, allocatable :: rank_list(:), tri_tf_list(:)
 
@@ -575,7 +577,6 @@ CONTAINS
     real(kind=DP), intent(out) :: time
     integer, optional, intent(out) :: istatus
 
-    integer :: input_status
     integer :: ierr_nf90
     integer :: varid_tt, varid_recnt, varid_imcnt
     integer(kind=4) :: start_time(1),  count_time(1), &
@@ -584,7 +585,6 @@ CONTAINS
     integer :: start_nz(1), count_nz(1)
     integer :: start_nv(1), count_nv(1)
     integer :: start_nm(1), count_nm(1)
-    integer :: is
     integer :: ny_st, ny_end
     integer :: t_count
     real(kind=DP), dimension(1) :: t_value
@@ -676,8 +676,13 @@ CONTAINS
                               len=int(2*global_nz,kind=4), dimid=dimids(3) )
       ierr_nf90=nf90_def_dim( ncid=ocnt_nc, name="vl", &
                               len=int(2*global_nv,kind=4), dimid=dimids(4) )
-      ierr_nf90=nf90_def_dim( ncid=ocnt_nc, name="mu", &
-                              len=int(global_nm+1,kind=4), dimid=dimids(5) )
+      if ( vp_coord == 1 ) then
+        ierr_nf90=nf90_def_dim( ncid=ocnt_nc, name="vp", &
+                                len=int(global_nm+1,kind=4), dimid=dimids(5) )
+      else
+        ierr_nf90=nf90_def_dim( ncid=ocnt_nc, name="mu", &
+                                len=int(global_nm+1,kind=4), dimid=dimids(5) )
+      end if
       ierr_nf90=nf90_def_dim( ncid=ocnt_nc, name="is", &
                               len=int(ns,kind=4),          dimid=dimids(6) )
       ierr_nf90=nf90_def_dim( ncid=ocnt_nc, name="t",  &
@@ -693,8 +698,13 @@ CONTAINS
                               dimids=dimids(3),   varid=varid_zz )
       ierr_nf90=nf90_def_var( ncid=ocnt_nc, name="vl",    xtype=NF90_DOUBLE, &
                               dimids=dimids(4),   varid=varid_vl )
-      ierr_nf90=nf90_def_var( ncid=ocnt_nc, name="mu",    xtype=NF90_DOUBLE, &
-                              dimids=dimids(5),   varid=varid_mu )
+      if ( vp_coord == 1 ) then
+        ierr_nf90=nf90_def_var( ncid=ocnt_nc, name="vp",  xtype=NF90_DOUBLE, &
+                                dimids=dimids(5), varid=varid_mu )
+      else
+        ierr_nf90=nf90_def_var( ncid=ocnt_nc, name="mu",  xtype=NF90_DOUBLE, &
+                                dimids=dimids(5), varid=varid_mu )
+      end if
       ierr_nf90=nf90_def_var( ncid=ocnt_nc, name="is",    xtype=NF90_INT, &
                               dimids=dimids(6),   varid=varid_is )
       ierr_nf90=nf90_def_var( ncid=ocnt_nc, name="t",     xtype=NF90_DOUBLE, &
@@ -763,9 +773,15 @@ CONTAINS
       ierr_nf90=nf90_put_var( ncid=ocnt_nc, varid=varid_vl, &
                               values=vl(1:2*nv), &
                               start=start_nv, count=count_nv )
-      ierr_nf90=nf90_put_var( ncid=ocnt_nc, varid=varid_mu, &
-                              values=mu(0:nm), &
-                              start=start_nm, count=count_nm )
+      if ( vp_coord == 1 ) then
+        ierr_nf90=nf90_put_var( ncid=ocnt_nc, varid=varid_mu, &
+                                values=vp(0,0:nm), &
+                                start=start_nm, count=count_nm )
+      else
+        ierr_nf90=nf90_put_var( ncid=ocnt_nc, varid=varid_mu, &
+                                values=mu(0,0:nm), &
+                                start=start_nm, count=count_nm )
+      end if
       ierr_nf90=nf90_put_var( ncid=ocnt_nc, varid=varid_is, &
                               values=(/ (is, is=0,ns-1) /) )
       call check_nf90err( ierr_nf90, "nf90_putvar" )
@@ -828,8 +844,13 @@ CONTAINS
                               len=int(nprocz,kind=4),      dimid=dimids(3) )
       ierr_nf90=nf90_def_dim( ncid=ofxv_nc, name="vl", &
                               len=int(2*global_nv,kind=4), dimid=dimids(4) )
-      ierr_nf90=nf90_def_dim( ncid=ofxv_nc, name="mu", &
-                              len=int(global_nm+1,kind=4), dimid=dimids(5) )
+      if ( vp_coord == 1 ) then
+        ierr_nf90=nf90_def_dim( ncid=ofxv_nc, name="vp", &
+                                len=int(global_nm+1,kind=4), dimid=dimids(5) )
+      else
+        ierr_nf90=nf90_def_dim( ncid=ofxv_nc, name="mu", &
+                                len=int(global_nm+1,kind=4), dimid=dimids(5) )
+      end if
       ierr_nf90=nf90_def_dim( ncid=ofxv_nc, name="is", &
                               len=int(ns,kind=4),          dimid=dimids(6) )
       ierr_nf90=nf90_def_dim( ncid=ofxv_nc, name="t",  &
@@ -845,8 +866,13 @@ CONTAINS
                               dimids=dimids(3),   varid=varid_zz )
       ierr_nf90=nf90_def_var( ncid=ofxv_nc, name="vl",    xtype=NF90_DOUBLE, &
                               dimids=dimids(4),   varid=varid_vl )
-      ierr_nf90=nf90_def_var( ncid=ofxv_nc, name="mu",    xtype=NF90_DOUBLE, &
-                              dimids=dimids(5),   varid=varid_mu )
+      if ( vp_coord == 1 ) then
+        ierr_nf90=nf90_def_var( ncid=ofxv_nc, name="vp",  xtype=NF90_DOUBLE, &
+                                dimids=dimids(5), varid=varid_mu )
+      else
+        ierr_nf90=nf90_def_var( ncid=ofxv_nc, name="mu",  xtype=NF90_DOUBLE, &
+                                dimids=dimids(5), varid=varid_mu )
+      end if
       ierr_nf90=nf90_def_var( ncid=ofxv_nc, name="is",    xtype=NF90_INT, &
                               dimids=dimids(6),   varid=varid_is )
       ierr_nf90=nf90_def_var( ncid=ofxv_nc, name="t",     xtype=NF90_DOUBLE, &
@@ -915,9 +941,15 @@ CONTAINS
       ierr_nf90=nf90_put_var( ncid=ofxv_nc, varid=varid_vl, &
                               values=vl(1:2*nv), &
                               start=start_nv, count=count_nv )
-      ierr_nf90=nf90_put_var( ncid=ofxv_nc, varid=varid_mu, &
-                              values=mu(0:nm), &
-                              start=start_nm, count=count_nm )
+      if ( vp_coord == 1 ) then
+        ierr_nf90=nf90_put_var( ncid=ofxv_nc, varid=varid_mu, &
+                                values=vp(0,0:nm), &
+                                start=start_nm, count=count_nm )
+      else
+        ierr_nf90=nf90_put_var( ncid=ofxv_nc, varid=varid_mu, &
+                                values=mu(0,0:nm), &
+                                start=start_nm, count=count_nm )
+      end if
       ierr_nf90=nf90_put_var( ncid=ofxv_nc, varid=varid_is, &
                               values=(/ (is, is=0,ns-1) /) )
       call check_nf90err( ierr_nf90, "nf90_putvar" )
@@ -953,12 +985,11 @@ CONTAINS
     real(kind=DP), intent(in) :: time
 
     integer :: dimids(1:4), ierr_nf90
-    integer :: varid_kx, varid_ky, varid_zz, varid_is, &
+    integer :: varid_kx, varid_ky, varid_zz, &
                varid_tt, varid_rephi, varid_imphi
     integer(kind=4) :: start_time(1), count_time(1), start_phi(1:4), count_phi(1:4)
     integer :: start_ny(1), count_ny(1)
     integer :: start_nz(1), count_nz(1)
-    integer :: is
     integer :: ny_st, ny_end
     integer :: ndims, nvars, ngatts, unlimdimid
     integer :: ophi_t_count
@@ -1077,13 +1108,12 @@ CONTAINS
     real(kind=DP), intent(in) :: time
 
     integer :: dimids(1:4), ierr_nf90
-    integer :: varid_kx, varid_ky, varid_zz, varid_is, &
+    integer :: varid_kx, varid_ky, varid_zz, &
                varid_tt, varid_reAl, varid_imAl
     integer(kind=4) :: start_time(1), count_time(1), &
                        start_Al(1:4), count_Al(1:4)
     integer :: start_ny(1), count_ny(1)
     integer :: start_nz(1), count_nz(1)
-    integer :: is
     integer :: ny_st, ny_end
     integer :: ndims, nvars, ngatts, unlimdimid
     integer :: oAl_t_count

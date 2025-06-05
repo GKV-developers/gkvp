@@ -5,6 +5,8 @@ MODULE GKV_set
 !
 !    Update history of gkvp_set.f90
 !    --------------
+!      gkvp_f0.63 (S. Maeyama, Dec 2023)
+!        - Choice of vp_coord (perpendicular velocity coordinate) is added.
 !      gkvp_f0.62 (S. Maeyama, Mar 2023)
 !        - Contents of subroutine set_cnfig are moved to GKV_geom, to implement
 !          time-dependent metrics and operators in rotating flux-tube model.

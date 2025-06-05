@@ -31,6 +31,7 @@ ifeq ($(FFT),gkvp_fft_fftw)
 endif
 
 FILEIO=gkvp_fileio_fortran
+#FILEIO=gkvp_fileio_zarr
 #FILEIO=gkvp_fileio_netcdf
 ### Usage of NetCDF (module load netcdf-fortran netcdf-c phdf5)
 ### NetCDF does not work on the FLOW supercomputer for now, Jan 17 2021

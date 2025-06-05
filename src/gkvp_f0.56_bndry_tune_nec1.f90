@@ -229,7 +229,8 @@ CONTAINS
                   mwn   = mx + dj(my)          ! --- mw = mx + dj for the negative-z 
 
                   if( abs(mwn) > nx ) then
-                    if ( vl(iv) > 0._DP ) then ! inflow
+                    !!!if ( vl(iv) > 0._DP ) then ! inflow
+                    if ( vl(iv)/dpara(-nz) > 0._DP ) then ! inflow
                       do iz = 0, nzb-1
                         ff(mx,my,-nz-nzb+iz,iv) = ( 0._DP, 0._DP )
                       end do
@@ -304,7 +305,8 @@ CONTAINS
                   mwp   = mx - dj(my)          ! --- mw = mx - dj for the positive-z 
 
                   if( abs(mwp) > nx ) then
-                    if ( vl(iv) > 0._DP ) then ! outflow
+                    !!!if ( vl(iv) > 0._DP ) then ! outflow
+                    if ( vl(iv)/dpara(nz-1) > 0._DP ) then ! outflow
                       ff(mx,my,nz  ,iv) =   ff(mx,my,nz-1,iv)
                       ff(mx,my,nz+1,iv) = - ff(mx,my,nz-2,iv) + 2._DP * ff(mx,my,nz-1,iv)
                     else                       ! inflow
@@ -1080,7 +1082,8 @@ CONTAINS
                   mwn   = mx + dj(my)          ! --- mw = mx + dj for the negative-z 
 
                   if( abs(mwn) > nx ) then
-                    if ( vl(iv) > 0._DP ) then ! inflow
+                    !!!if ( vl(iv) > 0._DP ) then ! inflow
+                    if ( vl(iv)/dpara(-nz) > 0._DP ) then ! inflow
                       do iz = 0, nzb-1
                         ff(mx,my,-nz-nzb+iz,iv) = ( 0._DP, 0._DP )
                       end do
@@ -1151,7 +1154,8 @@ CONTAINS
                   mwp   = mx - dj(my)          ! --- mw = mx - dj for the positive-z 
 
                   if( abs(mwp) > nx ) then
-                    if ( vl(iv) > 0._DP ) then ! outflow
+                    !!!if ( vl(iv) > 0._DP ) then ! outflow
+                    if ( vl(iv)/dpara(nz-1) > 0._DP ) then ! outflow
                       ff(mx,my,nz  ,iv) =   ff(mx,my,nz-1,iv)
                       ff(mx,my,nz+1,iv) = - ff(mx,my,nz-2,iv) + 2._DP * ff(mx,my,nz-1,iv)
                     else                       ! inflow
@@ -1735,7 +1739,8 @@ CONTAINS
                   mwn   = mx + dj(my)          ! --- mw = mx + dj for the negative-z 
 
                   if( abs(mwn) > nx ) then
-                    if ( vl(iv) > 0._DP ) then ! inflow
+                    !!!if ( vl(iv) > 0._DP ) then ! inflow
+                    if ( vl(iv)/dpara(-nz) > 0._DP ) then ! inflow
                       do iz = 0, nzb-1
                         ff(mx,my,-nz-nzb+iz,iv,im) = ( 0._DP, 0._DP )
                       end do
@@ -1812,7 +1817,8 @@ CONTAINS
                   mwp   = mx - dj(my)          ! --- mw = mx - dj for the positive-z 
 
                   if( abs(mwp) > nx ) then
-                    if ( vl(iv) > 0._DP ) then ! outflow
+                    !!!if ( vl(iv) > 0._DP ) then ! outflow
+                    if ( vl(iv)/dpara(nz-1) > 0._DP ) then ! outflow
                       ff(mx,my,nz  ,iv,im) =   ff(mx,my,nz-1,iv,im)
                       ff(mx,my,nz+1,iv,im) = - ff(mx,my,nz-2,iv,im) + 2._DP * ff(mx,my,nz-1,iv,im)
                     else                       ! inflow
