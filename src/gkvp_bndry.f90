@@ -1555,7 +1555,7 @@ CONTAINS
       allocate( mb2(-nx:nx,0:ny,-nz:nz-1,1:2*nv,1:2*nvb) )
 
 !$OMP parallel default (none) &
-!$OMP shared(ff,mb1,mb2) &
+!$OMP shared(ff,mb1,mb2)
       call bndry_shifts_m_buffin ( ff, mb1, mb2 )
 !$OMP barrier
 !$OMP master

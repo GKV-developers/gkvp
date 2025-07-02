@@ -1,3 +1,8 @@
+gkvp_f0.65                                              S. Maeyama     July 2025
+1) Makefile, shoot, sub.q are updated for NIFS-QST Plasma Simulator, sub-system A.
+
+
+
 gkvp_f0.64                                              S. Maeyama     June 2025
 1) Zarr store IO interface is implemented in src/gkvp_fileio_zarr.f90.
 
