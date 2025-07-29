@@ -14,7 +14,7 @@ if [ $# -lt 2 ]; then
 fi
 
 #### Environment setting
-DIR=/data/smaeyama/gkvp/f0.65/rev01
+DIR=/data/smaeyama/gkvp/f0.65/ITGae_lin
 LDM=gkvp.exe
 NL=gkvp_namelist
 SC=qsub

@@ -1,4 +1,4 @@
-### Intel Fortran Compiler ###
+### Intel Fortran Compiler (module load intel/2025.1) ###
 FC = mpiifx
 FFLAGS = -O3 -mcmodel=large -shared-intel -xCORE-AVX512 -qopenmp
 FFLAGS += -fpp

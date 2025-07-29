@@ -4,7 +4,7 @@
         z_filt="off",
         z_calc="cf4",
         art_diff=0.1d0,
-        init_random=.false.,
+        init_random=.true.,
         num_triad_diag=0,
         vp_coord=1, &end
  &triad mxt = 0, myt = 0/

@@ -1,3 +1,4 @@
+Updated for gkvp_f0.65                                  S. Maeyama    July 2025
 Updated for gkvp_f0.63                                  S. Maeyama     Dec 2024
 Updated for gkvp_f0.62                                  S. Maeyama   March 2023
 Updated for gkvp_f0.61                                  S. Maeyama   March 2021
@@ -27,7 +28,7 @@ NOTE for gkvp_f0.30                                     S. Maeyama   March 2013
 %%% For multi-platforms %%%
 
 1. Create "shoot", "Makefile" and "sub.q" in "run/", which have already been
-   prepared for helios(IFERC), k(RIKEN), ps(NIFS), nu(Nagoya), oakleaf(Tokyo).
+   prepared for ps_subA(NIFS-QST), flow(Nagoya-U), fugaku(RIKEN).
 2. Set the directory for output "DIR" in "shoot".
 3. Set node number, elapsed time limit, and so on in "sub.q".
 4. Compile and run the code.

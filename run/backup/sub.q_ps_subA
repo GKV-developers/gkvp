@@ -25,6 +25,7 @@
 ###      (Submit a batch job : "qsub sub.q")  ->  Use shoot script for GKV.
 ###      Check job status    : "qstat"
 ###      Delete job          : "qdel JOBID"
+###      Check node info     : "psinfo"
 ###      Show budget info    : "uresource PROJECTNAME"
 ###      Show disk usage     : "check_quota"
 ###
@@ -35,22 +36,23 @@
 ###      -l select: Computation resource request
 ###      *** Example of resource request ***
 ###      Ex. 1)
-###          -l select=36:ncpus=256:mem=752gb:mpiprocs=24
+###          -l select=36:ncpus=256:mem=768gb:mpiprocs=24
 ###                 select=36 requests 36 resource chunks.
-###                 Each chunk specifies ncpus=256 cores and mem=752 GB, 
+###                 Each chunk specifies ncpus=256 cores and mem=768 GB,
 ###                 corresponding to 1 compute node. 
 ###                 mpiprocs=24 means 24 MPI processes per chunk.
 ###                 -> Total: 36 computation nodes and 24x36=864 MPI processes
 ###      Ex. 2)
-###          -l select=72:ncpus=128:mem=376gb:mpiprocs=12
+###          -l select=72:ncpus=128:mem=384gb:mpiprocs=12
 ###                 An equivalent configuration with the above, 
 ###                 while each chunk corresponds to 1 CPU socket.
 ##############
 
 #PBS -P NIFS23KIST041
-#PBS -q A_dev
-#PBS -l walltime=00:30:00
-#PBS -l select=1:ncpus=128:mem=376gb:mpiprocs=16
+#PBS -q A_S
+#PBS -l walltime=00:15:00
+#PBS -l select=1:ncpus=128:mem=384gb:mpiprocs=16
+
 
 export OMP_NUM_THREADS=8   # Set number of OpenMP threads per MPI process
 
@@ -58,7 +60,7 @@ export OMP_NUM_THREADS=8   # Set number of OpenMP threads per MPI process
 
 ### Settings
 ulimit -s unlimited
-source /system/apps/rhel9/dev/oneapi/2025.1/setvars.sh # Load Intel oneAPI
+module load intel/2025.1           # Load Intel oneAPI
 #export FI_PROVIDER=mlx            # (Commented) Use Mellanox/UCX communication layer
 #export UCX_NET_DEVICES=mlx5_0:1   # (Commented) Specify Infiniband NIC and port for UCX
 export FI_PROVIDER=psm3            # Use Intel PSM3 for low-latency communication (Omni-Path)
